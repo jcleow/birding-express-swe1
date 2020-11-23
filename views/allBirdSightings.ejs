@@ -1,0 +1,36 @@
+<%- include('headerAndNav') %>
+  <body>
+    <div class="container navTopMargin">
+      <div class="row">
+        <div class="col d-flex justify-content-center selectFormTitle">
+          Sightings
+        </div>
+      </div>
+    </div> 
+    
+<div class="container-sm">
+  <table class="table table-hover">
+  <thead>
+    <tr>
+      <th scope="col">No.</th>
+      <th scope="col">Species Name</th>
+      <th scope="col">Habitat</th>
+      <th scope="col">Flock Size</th>
+    </tr>
+  </thead>
+  <tbody>
+    <% sightings.forEach((sighting)=>{ %>
+    <tr>
+      <th scope="row"><%=sighting.id%></th>
+      <td><a href="/note/<%=sighting.id%>"><%=sighting.species_name%> </a> </td>
+      <td> <%=sighting.habitat%> </td>
+      <td> <%=sighting.flock_size%> </td>
+    </tr>
+    <% }) %>
+  </tbody>
+</table>
+  </div>
+
+  </body>
+
+<%-include('footer') %>
