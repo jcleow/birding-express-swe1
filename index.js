@@ -30,11 +30,13 @@ app.use(cookieParser());
 
 // Function that includes the username(if logged-in ) from cookies into dataObj for rendering
 
-const includeLoggedInUsername = (data, loggedInUserName) => {
+const includeLoggedInUsername = (data, loggedInUserName, loggedInUserId) => {
   // If user is logged in, hence loggedInUserName exists in req cookie
   if (loggedInUserName) {
     data.loggedInUser = loggedInUserName;
+    data.loggedInUserId = loggedInUserId;
   }
+  console.log(data, 'data');
   return data;
 };
 
@@ -72,7 +74,7 @@ app.get('/note/:id', (req, res) => {
   const { id } = req.params;
   pool.query(`SELECT * FROM notes WHERE id=${id}`, (err, result) => {
     let data = result.rows[0];
-    data = includeLoggedInUsername(data, req.cookies.loggedInUser);
+    data = includeLoggedInUsername(data, req.cookies.loggedInUser, req.cookies.loggedInUserId);
     res.render('birdSighting', data);
   });
 });
@@ -87,12 +89,10 @@ app.get('/', (req, res) => {
       console.log(err, 'error');
       return;
     }
-    const allSightingsObj = { sightings: result.rows };
+    let allSightingsObj = { sightings: result.rows };
     // Add in current loggedInUser parameter to change navbar display
-    if (req.cookies.loggedInUser) {
-      allSightingsObj.loggedInUser = req.cookies.loggedInUser;
-    }
-    console.log(allSightingsObj);
+    allSightingsObj = includeLoggedInUsername(allSightingsObj,
+      req.cookies.loggedInUser, req.cookies.loggedInUserId);
     res.render('allBirdSightings', allSightingsObj);
   });
 });
@@ -226,8 +226,11 @@ app.post('/login', (req, res) => {
       res.status(403).send('Sorry you entered the wrong username and/or password');
       return;
     }
-    res.cookie('loggedInUser', req.body.username);
-    res.redirect('/user-dashboard');
+    pool.query(`SELECT id FROM users WHERE username='${req.body.username}'`, (nextErr, nextResult) => {
+      res.cookie('loggedInUser', req.body.username);
+      res.cookie('loggedInUserId', nextResult.rows[0].id);
+      res.redirect('/user-dashboard');
+    });
   });
 });
 
@@ -235,6 +238,7 @@ app.post('/login', (req, res) => {
 app.delete('/logout', (req, res) => {
   console.log('test-1');
   res.clearCookie('loggedInUser');
+  res.clearCookie('loggedInUserId');
   res.redirect('/');
 });
 
@@ -275,7 +279,7 @@ app.get('/users/:id', (req, res) => {
       let data = {};
       data.sightings = nextResult.rows;
       // This loggedInUser refers to user who is currently logged in
-      data = includeLoggedInUsername(data, req.cookies.loggedInUser);
+      data = includeLoggedInUsername(data, req.cookies.loggedInUser, req.cookies.loggedInUserId);
 
       console.log(data, 'data');
       res.render('userBirdSighting', data);

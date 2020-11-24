@@ -22,13 +22,13 @@
   </thead>
   <tbody id="accordion">
     <% sightings.forEach((sighting,index)=>{ %>
-    <tr class= "collapsed" data-toggle="collapse" data-target="#collapse<%=index%>">
+    <tr class= "accordion-toggle collapsed" data-toggle="collapse" data-target="#collapse<%=index%>">
       <th scope="row"><%=sighting.id%></th>
       <td><a href="/note/<%=sighting.id%>"><%=sighting.species_name%> </a> </td>
       <td> <%=sighting.habitat%> </td>
       <td> <%=sighting.flock_size%> </td>
       <td> <%=sighting.username%></td>      
-    <td>
+    <td class='actionBtns'>
       <div class="row">
         <div class="col-sm-3">
              <a href="/note/<%=sighting.id%>/edit" class="btn btn-warning" role="button">
@@ -46,11 +46,31 @@
         </form>
       </div>
     </td>
+    <td class="expand-button"></td>
     </tr>
     <tr>
-    <td colspan="7">
+    <td colspan="12">
       <div id="collapse<%=index%>" class="collapse" data-parent="#accordion">
-          Anim pariatur cliche reprehenderit, enim eiusmod high life accusamus terry richardson ad squid. 3 wolf moon officia aute, non cupidatat skateboard dolor brunch. Food truck quinoa nesciunt laborum eiusmod. Brunch 3 wolf moon tempor, sunt aliqua put a bird on it squid single-origin coffee nulla assumenda shoreditch et. Nihil anim keffiyeh helvetica, craft beer labore wes anderson cred nesciunt sapiente ea proident. Ad vegan excepteur butcher vice lomo. Leggings occaecat craft beer farm-to-table, raw denim aesthetic synth nesciunt you probably haven't heard of them accusamus labore sustainable VHS.
+                <div class="row pt-3 pl-3"><b>Species Name:</b></div>
+      <div class="row pl-3"><%=sighting.species_name%></div>
+
+      <div class="row pt-3 pl-3"><b>Habitat:</b></div>
+      <div class="row pl-3"><%=sighting.habitat%></div>
+
+      <div class="row pt-3 pl-3"><b>Date:</b></div>
+      <div class="row pl-3"><%=sighting.date_seen%></div>
+
+      <div class="row pt-3 pl-3"><b>Appearance:</b></div>
+      <div class="row pl-3"><%=sighting.appearance%></div>
+      
+      <div class="row pt-3 pl-3"><b>Behaviour:</b></div>
+      <div class="row pl-3"><%=sighting.behaviour%></div>
+
+      <div class="row pt-3 pl-3"><b>Vocalizations:</b></div>
+      <div class="row pl-3"><%=sighting.vocalizations%></div>
+
+      <div class="row pt-3 pl-3"><b>Flock Size</b></div>
+      <div class="row pl-3"><%=sighting.flock_size%></div>
       </div>
     </td>
     </tr>    

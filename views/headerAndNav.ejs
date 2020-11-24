@@ -30,7 +30,7 @@
           <a class="nav-link" href="/note">Report New Sighting</a>
         </li>
       <li class="nav-item">
-        <a class="nav-link" href="/">Favorite Sightings</a>
+        <a class="nav-link" href="/"></a>
       </li>
       </ul>
       <ul class="navbar-nav ml-auto">
@@ -49,6 +49,12 @@
       <% if(locals.loggedInUser) { %>
       <li class="nav-item ml-auto my-auto">
         Welcome <%= loggedInUser%>!
+      </li>
+      <% } %>
+
+      <% if(locals.loggedInUser) { %>
+      <li class="nav-item ml-auto my-auto">
+       <a class="nav-link" href="/users/<%=loggedInUserId%>">My Sightings</a>
       </li>
       <% } %>
 

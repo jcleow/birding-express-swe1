@@ -99,3 +99,24 @@ h1 .display {
   padding: 0.75rem;
   vertical-align: middle;
 }
+
+.expand-button {
+  position: relative;
+}
+.accordion-toggle .expand-button::after {
+  position: absolute;
+  content: "-";
+  transform: translate(0px, -15px);
+  font-size: 20px;
+}
+
+.accordion-toggle.collapsed .expand-button::after {
+  position: absolute;
+  content: "+";
+  transform: translate(0px, -15px);
+  font-size: 20px;
+}
+
+.actionBtns {
+  width: 300px;
+}
