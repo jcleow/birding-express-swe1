@@ -12,8 +12,10 @@
 
   <!--NavBar-->
   <nav class="navbar navbar-expand-sm fixed-top navbar-light navBarBg">
-    <a class="navbar-brand">Bird Sightings!</a>
-    
+    <a class="navbar-brand">
+      <img src="/puffinslogo.png" class="d-inline-block align-top logo"/>  
+      Bird Sightings!
+    </a>
   <!-- Toggler/collapsibe Button -->
   <button class="navbar-toggler" type="button" data-toggle="collapse" data-target="#collapsibleNavbar">
     <span class="navbar-toggler-icon"></span>
@@ -31,5 +33,35 @@
         <a class="nav-link" href="/">Favorite Sightings</a>
       </li>
       </ul>
+      <ul class="navbar-nav ml-auto">
+      <% if(!locals.loggedInUser) { %>
+      <li class="nav-item ml-auto">
+        <a class="nav-link" href="/login">Login</a>
+      </li>
+      <% } %>
+ 
+      <% if(!locals.loggedInUser) { %>
+      <li class="nav-item ml-auto">
+        <a class="nav-link" href="/signup">Sign Up</a>
+      </li>
+      <% } %>
+
+      <% if(locals.loggedInUser) { %>
+      <li class="nav-item ml-auto my-auto">
+        Welcome <%= loggedInUser%>!
+      </li>
+      <% } %>
+
+      <% if(locals.loggedInUser) { %>
+      <li class="nav-item ml-auto">
+        <form action="/logout?_method=DELETE" method="POST">
+        <button class="nav-link logoutBtn" type="submit" name="_method">Log out</button>
+        </form>
+      </li>
+      <% } %>
+
+    
+
+    </ul>
     </div>
   </nav>

@@ -1,0 +1,65 @@
+<%- include('headerAndNav') %>
+
+  <body>
+    <div class="pageTitle navTopMargin">Sightings by 
+      <%if(sightings[0]){ %>
+      <%=sightings[0].username%> 
+      <% } else { %>
+      <%=loggedInUser%>
+      <% } %> 
+    </div>
+
+    <% sightings.forEach((sighting) =>{ %>
+    <div class="container mt-3 sightingContainer">
+      <div class="row pt-3 pl-3"><b>Species Name:</b></div>
+      <div class="row pl-3"><%=sighting.species_name%></div>
+
+      <div class="row pt-3 pl-3"><b>Habitat:</b></div>
+      <div class="row pl-3"><%=sighting.habitat%></div>
+
+      <div class="row pt-3 pl-3"><b>Date:</b></div>
+      <div class="row pl-3"><%=sighting.date_seen%></div>
+
+      <div class="row pt-3 pl-3"><b>Appearance:</b></div>
+      <div class="row pl-3"><%=sighting.appearance%></div>
+      
+      <div class="row pt-3 pl-3"><b>Behaviour:</b></div>
+      <div class="row pl-3"><%=sighting.behaviour%></div>
+
+      <div class="row pt-3 pl-3"><b>Vocalizations:</b></div>
+      <div class="row pl-3"><%=sighting.vocalizations%></div>
+
+      <div class="row pt-3 pl-3"><b>Flock Size</b></div>
+      <div class="row pl-3"><%=sighting.flock_size%></div>
+ 
+  
+      <div class="row mt-3 pb-4 d-flex justify-content-center">
+        <div class="col-sm-1">
+          <a href="/note/<%=sighting.id%>/edit" class="btn btn-warning" role="button">
+            Edit</a
+          >
+        </div>
+
+        <div class="col-sm-1">
+          <form action="/note/sighting.id/delete?_method=DELETE" method="POST">
+            <input
+              type="submit"
+              class="btn btn-danger"
+              name="_method"
+              value="Delete"
+            />
+          </form>
+      </div>
+    </div>
+    </div>
+      <% }); %>
+    <div class=row>
+    <div class="col-sm-12 d-flex justify-content-center">
+      <a href="/" class="btn btn-primary doneBtn" role="button">
+        Return to Main Page</a
+      >
+    </div>
+    </div>
+  </body>
+  
+<%-include('footer') %>

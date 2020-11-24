@@ -1,6 +1,7 @@
 import pg from 'pg';
 import methodOverride from 'method-override';
-import express, { request } from 'express';
+import cookieParser from 'cookie-parser';
+import express from 'express';
 
 // Set up Pooling with PostgresQL
 const { Pool } = pg;
@@ -24,6 +25,18 @@ app.use(express.urlencoded({ extended: false }));
 app.use(express.static('public'));
 // Middleware that allows POST methods to be overriden for PUT and DELETE requests
 app.use(methodOverride('_method'));
+// Middleware that allows request.cookies to be parsed
+app.use(cookieParser());
+
+// Function that includes the username(if logged-in ) from cookies into dataObj for rendering
+
+const includeLoggedInUsername = (data, loggedInUserName) => {
+  // If user is logged in, hence loggedInUserName exists in req cookie
+  if (loggedInUserName) {
+    data.loggedInUser = loggedInUserName;
+  }
+  return data;
+};
 
 // Route: Render a form that will create a new note
 app.get('/note', (req, res) => {
@@ -38,8 +51,10 @@ app.post('/note', (req, res) => {
     }
     return value;
   });
+  newNoteArray.push(req.cookies.loggedInUser);
+  console.log(newNoteArray, 'test-2');
   const insertNoteQuery = {
-    text: 'INSERT INTO notes(species_name,habitat,date_seen,appearance,behaviour,vocalizations,flock_size) VALUES($1,$2,$3,$4,$5,$6,$7) RETURNING * ',
+    text: 'INSERT INTO notes(species_name,habitat,date_seen,appearance,behaviour,vocalizations,flock_size,username) VALUES($1,$2,$3,$4,$5,$6,$7,$8) RETURNING * ',
     values: newNoteArray,
   };
   pool.query(insertNoteQuery, (err, result) => {
@@ -56,7 +71,9 @@ app.post('/note', (req, res) => {
 app.get('/note/:id', (req, res) => {
   const { id } = req.params;
   pool.query(`SELECT * FROM notes WHERE id=${id}`, (err, result) => {
-    res.render('birdSighting', result.rows[0]);
+    let data = result.rows[0];
+    data = includeLoggedInUsername(data, req.cookies.loggedInUser);
+    res.render('birdSighting', data);
   });
 });
 
@@ -71,6 +88,11 @@ app.get('/', (req, res) => {
       return;
     }
     const allSightingsObj = { sightings: result.rows };
+    // Add in current loggedInUser parameter to change navbar display
+    if (req.cookies.loggedInUser) {
+      allSightingsObj.loggedInUser = req.cookies.loggedInUser;
+    }
+    console.log(allSightingsObj);
     res.render('allBirdSightings', allSightingsObj);
   });
 });
@@ -78,9 +100,26 @@ app.get('/', (req, res) => {
 // Render the edit form
 app.get('/note/:id/edit', (req, res) => {
   const { id } = req.params;
-  const getExistingNoteQuery = (`SELECT * FROM notes WHERE id=${id}`);
-  pool.query(getExistingNoteQuery, (err, result) => {
-    res.render('editExistingBirdSightingForm', result.rows[0]);
+  // Subsequent callback function that runs after validating username
+  const renderEditForm = () => {
+    const getExistingNoteQuery = (`SELECT * FROM notes WHERE id=${id}`);
+    pool.query(getExistingNoteQuery, (nextErr, nextResult) => {
+      if (nextErr) {
+        console.log(nextErr, 'nextErr');
+        return;
+      }
+      res.render('editExistingBirdSightingForm', nextResult.rows[0]);
+    });
+  };
+
+  // Perform validation on whether user can edit/delete a particular sighting
+  pool.query(`SELECT username FROM notes WHERE id=${id}`, (err, result) => {
+    if (req.cookies.loggedInUser !== result.rows[0].username) {
+      res.status(403).send('You are not allowed to edit this sighting');
+      return;
+    }
+    // If valid,
+    renderEditForm();
   });
 });
 
@@ -115,18 +154,133 @@ app.put('/note/:id/edit', (req, res) => {
 app.delete('/note/:id/delete', (req, res) => {
   const { id } = req.params;
   const deleteQuery = (`DELETE FROM notes WHERE id=${id}`);
-  pool.query(deleteQuery, (err, result) => {
-    if (err) {
-      console.log(err);
+  // Subsequent callback that deletes a sighting
+  const deleteSighting = () => {
+    pool.query(deleteQuery, (nextErr, nextResult) => {
+      if (nextErr) {
+        console.log(nextErr);
+        return;
+      }
+      res.redirect('/');
+    });
+  };
+
+  // Perform validation on whether user can edit/delete a particular sighting
+  pool.query(`SELECT username FROM notes WHERE id=${id}`, (err, result) => {
+    if (req.cookies.loggedInUser !== result.rows[0].username) {
+      res.status(403).send('You are not allowed to delete this sighting');
       return;
     }
-    res.redirect('/');
+    // If valid,
+    deleteSighting();
   });
+});
+
+// Route hanlder that renders signup form
+app.get('/signup', (req, res) => {
+  res.render('signup');
+});
+
+// Route handler that submits signup details
+app.post('/signup', (req, res) => {
+  // convert req.body into an array for sql querying later
+  const userDetailsArray = Object.entries(req.body).map(([field, input]) => {
+    if (field !== 'confirmPassword' && field !== 'termsAndConditions') {
+      return input;
+    }
+  });
+  // Filter out the undefined values during map function
+  const filteredUserDetailsArray = userDetailsArray.filter((detail) => detail !== undefined);
+  console.log(filteredUserDetailsArray, 'filtered');
+  const signupQuery = {
+    text: 'INSERT INTO users(first_name,last_name,address,zip_code,contactNumber,email_address,username,password) VALUES($1,$2,$3,$4,$5,$6,$7,$8) RETURNING * ',
+    values: filteredUserDetailsArray,
+  };
+  pool.query(signupQuery, (err, result) => {
+    if (err) {
+      console.log('error', err.stack);
+      return;
+    }
+    console.log(result.rows);
+  });
+  res.send('Signup complete. Welcome!');
 });
 
 // Route handler that handles logins
 app.get('/login', (req, res) => {
+  res.render('login');
+});
 
+// Route handler that posts/submits login info to server for auth
+app.post('/login', (req, res) => {
+  // req.body consists of {username: value , password:value }
+  console.log(req.body, 'req.body');
+
+  // Perform check by first getting the data from database
+  pool.query(`SELECT username FROM users WHERE password='${req.body.password}'`, (err, result) => {
+    if (err) {
+      console.log(err, 'error');
+      return;
+    }
+    if (result.rows.length === 0) {
+      res.status(403).send('Sorry you entered the wrong username and/or password');
+      return;
+    }
+    res.cookie('loggedInUser', req.body.username);
+    res.redirect('/user-dashboard');
+  });
+});
+
+// Deletes cookie with associated username
+app.delete('/logout', (req, res) => {
+  console.log('test-1');
+  res.clearCookie('loggedInUser');
+  res.redirect('/');
+});
+
+// Fictitious action url that checks if user is logged in
+app.get('/user-dashboard', (req, res) => {
+  if (req.cookies.loggedInUser === undefined) {
+    console.log('test-3');
+    res.status(403).send('Sorry you entered the wrong username and/or password');
+    return;
+  }
+
+  pool.query(`SELECT id FROM users WHERE username = '${req.cookies.loggedInUser}'`, (err, result) => {
+    if (err) {
+      console.log(err);
+      return;
+    }
+    const { id } = result.rows[0];
+    // Redirect to user sighting page
+    res.redirect(`/users/${id}`);
+  });
+});
+
+app.get('/users/:id', (req, res) => {
+  const { id } = req.params;
+  // First select username based on id provided in url
+  pool.query(`SELECT username FROM users WHERE id= ${id}`, (err, result) => {
+    if (err) {
+      console.log('err', err);
+      return;
+    }
+    const { username } = result.rows[0];
+    // Next select all objects that is associated with said username
+    pool.query(`SELECT * FROM notes WHERE username='${username}'`, (nextErr, nextResult) => {
+      if (nextErr) {
+        console.log('err', err);
+        return;
+      }
+      let data = {};
+      data.sightings = nextResult.rows;
+      // This loggedInUser refers to user who is currently logged in
+      data = includeLoggedInUsername(data, req.cookies.loggedInUser);
+
+      console.log(data, 'data');
+      res.render('userBirdSighting', data);
+    });
+  });
 });
 
 app.listen(PORT);

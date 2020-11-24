@@ -1,4 +1,85 @@
 /** @format */
 .navTopMargin {
-  margin-top: 50px;
+  margin-top: 60px;
+}
+
+.navBarBg {
+  background-color: rgb(39, 188, 233);
+}
+
+.backgroundDisplay {
+  position: relative;
+  background: lightgrey;
+  overflow: hidden;
+  border-radius: 20px;
+}
+
+.backgroundDisplay h1 {
+  padding: 135px;
+  height: 300px;
+  position: relative;
+  color: white;
+  font-size: 30px;
+  z-index: 2;
+}
+
+h1 .display {
+  padding: 10px;
+}
+.backgroundDisplay::before {
+  content: " ";
+  position: absolute;
+  left: 0;
+  top: 0;
+  width: 100%;
+  height: 100%;
+  z-index: 1;
+  opacity: 0.7;
+  background-image: url("/puffins.jpg");
+  background-repeat: no-repeat;
+  background-attachment: fixed;
+  background-size: cover;
+}
+
+.tableDisplay {
+  min-height: 1000px;
+}
+
+.logo {
+  width: 40px;
+  height: auto;
+  border-radius: 40px;
+}
+
+.loginDisplay {
+  padding-top: 50px;
+}
+
+.signupDisplay {
+  min-height: 1000px;
+}
+.submitBtn {
+  width: 200px;
+  text-align: center;
+}
+.logoutBtn {
+  background: none !important;
+  border: none;
+}
+.sightingContainer {
+  background-color: lightyellow;
+  margin-bottom: 20px;
+}
+
+.pageTitle {
+  text-align: center;
+  font-size: 30px;
+}
+
+.doneBtn {
+  margin-bottom: 100px;
+}
+
+.required {
+  color: red;
 }
