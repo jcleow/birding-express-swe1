@@ -1,7 +1,9 @@
 import pg from 'pg';
+import jsSHA from 'jssha';
 import methodOverride from 'method-override';
 import cookieParser from 'cookie-parser';
 import express from 'express';
+import { render } from 'ejs';
 
 // Set up Pooling with PostgresQL
 const { Pool } = pg;
@@ -36,7 +38,6 @@ const includeLoggedInUsername = (data, loggedInUserName, loggedInUserId) => {
     data.loggedInUser = loggedInUserName;
     data.loggedInUserId = loggedInUserId;
   }
-  console.log(data, 'data');
   return data;
 };
 
@@ -54,7 +55,6 @@ app.post('/note', (req, res) => {
     return value;
   });
   newNoteArray.push(req.cookies.loggedInUser);
-  console.log(newNoteArray, 'test-2');
   const insertNoteQuery = {
     text: 'INSERT INTO notes(species_name,habitat,date_seen,appearance,behaviour,vocalizations,flock_size,username) VALUES($1,$2,$3,$4,$5,$6,$7,$8) RETURNING * ',
     values: newNoteArray,
@@ -115,7 +115,8 @@ app.get('/note/:id/edit', (req, res) => {
   // Perform validation on whether user can edit/delete a particular sighting
   pool.query(`SELECT username FROM notes WHERE id=${id}`, (err, result) => {
     if (req.cookies.loggedInUser !== result.rows[0].username) {
-      res.status(403).send('You are not allowed to edit this sighting');
+      res.status(403);
+      res.render('displayErrorPage');
       return;
     }
     // If valid,
@@ -183,15 +184,20 @@ app.get('/signup', (req, res) => {
 
 // Route handler that submits signup details
 app.post('/signup', (req, res) => {
-  // convert req.body into an array for sql querying later
   const userDetailsArray = Object.entries(req.body).map(([field, input]) => {
+    if (field === 'password') {
+      const shaObj = new jsSHA('SHA-512', 'TEXT', { encoding: 'UTF8' });
+      shaObj.update(input);
+      const hash = shaObj.getHash('HEX');
+      return hash;
+    }
     if (field !== 'confirmPassword' && field !== 'termsAndConditions') {
       return input;
     }
   });
   // Filter out the undefined values during map function
   const filteredUserDetailsArray = userDetailsArray.filter((detail) => detail !== undefined);
-  console.log(filteredUserDetailsArray, 'filtered');
+
   const signupQuery = {
     text: 'INSERT INTO users(first_name,last_name,address,zip_code,contactNumber,email_address,username,password) VALUES($1,$2,$3,$4,$5,$6,$7,$8) RETURNING * ',
     values: filteredUserDetailsArray,
@@ -203,7 +209,7 @@ app.post('/signup', (req, res) => {
     }
     console.log(result.rows);
   });
-  res.send('Signup complete. Welcome!');
+  res.render('successLogin');
 });
 
 // Route handler that handles logins
@@ -213,17 +219,19 @@ app.get('/login', (req, res) => {
 
 // Route handler that posts/submits login info to server for auth
 app.post('/login', (req, res) => {
-  // req.body consists of {username: value , password:value }
-  console.log(req.body, 'req.body');
-
+  // Convert req.body.password to hashed password first
+  const shaObj = new jsSHA('SHA-512', 'TEXT', { encoding: 'UTF8' });
+  shaObj.update(req.body.password);
+  const hash = shaObj.getHash('HEX');
   // Perform check by first getting the data from database
-  pool.query(`SELECT username FROM users WHERE password='${req.body.password}'`, (err, result) => {
+  pool.query(`SELECT username FROM users WHERE password='${hash}'`, (err, result) => {
     if (err) {
       console.log(err, 'error');
       return;
     }
     if (result.rows.length === 0) {
-      res.status(403).send('Sorry you entered the wrong username and/or password');
+      res.status(403);
+      res.render('displayErrorPage');
       return;
     }
     pool.query(`SELECT id FROM users WHERE username='${req.body.username}'`, (nextErr, nextResult) => {
@@ -236,7 +244,6 @@ app.post('/login', (req, res) => {
 
 // Deletes cookie with associated username
 app.delete('/logout', (req, res) => {
-  console.log('test-1');
   res.clearCookie('loggedInUser');
   res.clearCookie('loggedInUserId');
   res.redirect('/');
@@ -245,7 +252,6 @@ app.delete('/logout', (req, res) => {
 // Fictitious action url that checks if user is logged in
 app.get('/user-dashboard', (req, res) => {
   if (req.cookies.loggedInUser === undefined) {
-    console.log('test-3');
     res.status(403).send('Sorry you entered the wrong username and/or password');
     return;
   }
@@ -261,8 +267,10 @@ app.get('/user-dashboard', (req, res) => {
   });
 });
 
+// Render a user's sighting page
 app.get('/users/:id', (req, res) => {
   const { id } = req.params;
+  const { species_name: speciesName } = req.query;
   // First select username based on id provided in url
   pool.query(`SELECT username FROM users WHERE id= ${id}`, (err, result) => {
     if (err) {
@@ -281,10 +289,50 @@ app.get('/users/:id', (req, res) => {
       // This loggedInUser refers to user who is currently logged in
       data = includeLoggedInUsername(data, req.cookies.loggedInUser, req.cookies.loggedInUserId);
 
-      console.log(data, 'data');
+      // Get a list of unique species names to view in dropdown button
+      const listView = [];
+      data.sightings.forEach((sighting) => {
+        if (!listView.includes(sighting.species_name)) {
+          listView.push(sighting.species_name);
+        }
+      });
+      data.listView = listView;
+
+      // if user specified a species_name through the dropdown button
+      if (speciesName) {
+        // This is an array
+        data.selectedSpeciesData = data.sightings.filter((sighting) => sighting.species_name === speciesName);
+      }
       res.render('userBirdSighting', data);
     });
   });
+});
+
+// Render a form to create a new species
+app.get('/species', (req, res) => {
+  res.render('submitNewSpecies');
+});
+
+// Submit a new species
+app.post('/species', (req, res) => {
+  const newTypeOfSpeciesData = Object.entries(req.body).map(([key, value]) => value);
+
+  const insertQuery = {
+    text: 'INSERT INTO species(name,scientific_name,family_name,other_information) VALUES($1,$2,$3,$4)',
+    values: newTypeOfSpeciesData,
+  };
+  pool.query(insertQuery, (err, result) => {
+    if (err) {
+      console.log(err);
+      return;
+    }
+    console.log(result.rows);
+  });
+  res.redirect('/');
+});
+
+app.get('/species/:index', (req, res) => {
+  res.render('speciesIndex');
 });
 
 app.listen(PORT);
