@@ -14,7 +14,7 @@
   border-radius: 20px;
 }
 
-.backgroundDisplay h1 {
+.backgroundDisplay .displaySightings {
   padding: 135px;
   height: 300px;
   position: relative;
@@ -23,9 +23,6 @@
   z-index: 2;
 }
 
-h1 .display {
-  padding: 10px;
-}
 .backgroundDisplay::before {
   content: " ";
   position: absolute;
@@ -41,12 +38,8 @@ h1 .display {
   background-size: cover;
 }
 
-.tableDisplay {
-  min-height: 1000px;
-}
-
 .logo {
-  width: 40px;
+  width: 50px;
   height: auto;
   border-radius: 40px;
 }

@@ -309,12 +309,12 @@ app.get('/users/:id', (req, res) => {
 });
 
 // Render a form to create a new species
-app.get('/species', (req, res) => {
+app.get('/species/create', (req, res) => {
   res.render('submitNewSpecies');
 });
 
 // Submit a new species
-app.post('/species', (req, res) => {
+app.post('/species/create', (req, res) => {
   const newTypeOfSpeciesData = Object.entries(req.body).map(([key, value]) => value);
 
   const insertQuery = {
@@ -331,7 +331,12 @@ app.post('/species', (req, res) => {
   res.redirect('/');
 });
 
+// Render specific species by index
 app.get('/species/:index', (req, res) => {
+  const { index } = req.params;
+
+  pool;
+  // First select
   res.render('speciesIndex');
 });
 

@@ -1,24 +1,19 @@
 <%- include('headerAndNav') %>
-<body>  
-<!-- First Section-->   
-<div class= "toCollapseShow" data-toggle="collapse" data-target="#collapseSightingsTable">
-  <div class="row">
-    <div class="col d-flex justify-content-center align-self-center backgroundDisplay">
-      <div class='displaySightings'>
-        <span>All Bird Sightings</span>
-      </div>
+  <body>     
+    <div class="videoDisplay">
+      <p><span class="display"></span></p>
     </div>
-  </div>
-  <div class='row'>
-    <div class='col d-flex justify-content-center align-self-center backgroundDisplay'>
-      <span><i class="fa fa-angle-double-down fa-4x"></i></span>
+      
+<div class="container navTopMargin">
+  <div class="row">
+    <div class="col d-flex justify-content-center align-self-center selectFormTitle backgroundDisplay">
+      <h1><span class="display">All Bird Sightings</span></h1>
     </div>
   </div>
 </div> 
-
-<section>
-<div class="container-sm tableDisplay collapse" id="collapseSightingsTable">
-  <table class="table table-hover" class="collapse" data-parent="#overallAccordion">
+    
+<div class="container-sm">
+  <table class="table table-hover">
   <thead>
     <tr>
       <th scope="col">No.</th>
@@ -87,30 +82,11 @@
   </tbody>
 </table>
   </div>
+<!-- display for species-->
 
 
-</section>
-
-
-<!-- Second Section on Species Viewed-->
-<section>
-<div class= "toCollapseShow" data-toggle="collapse" data-target="#collapseSpeciesTable">
-  <div class="row">
-    <div class="col d-flex justify-content-center align-self-center backgroundDisplay">
-      <div class='displaySightings'>
-        <span>All Species Recorded</span>
-      </div>
-    </div>
-  </div>
-  <div class='row'>
-    <div class='col d-flex justify-content-center align-self-center backgroundDisplay'>
-      <span><i class="fa fa-angle-double-down fa-4x"></i></span>
-    </div>
-  </div>
-</div> 
-
-<div class="container-sm tableDisplay collapse" id="collapseSpeciesTable">
-  <table class="table table-hover" class="collapse" data-parent="#overallAccordion">
+<div class="container-sm tableDisplay">
+  <table class="table table-hover">
   <thead>
     <tr>
       <th scope="col">No.</th>
@@ -121,7 +97,7 @@
       <th scope="col">Actions</th>
     </tr>
   </thead>
-  <tbody id="accordion2">
+  <tbody id="accordion">
     <% sightings.forEach((sighting,index)=>{ %>
     <tr class= "accordion-toggle collapsed" data-toggle="collapse" data-target="#collapse<%=index%>">
       <th scope="row"><%=sighting.id%></th>
@@ -151,7 +127,7 @@
     </tr>
     <tr>
     <td colspan="12">
-      <div id="collapse<%=index%>" class="collapse" data-parent="#accordion2">
+      <div id="collapse<%=index%>" class="collapse" data-parent="#accordion">
                 <div class="row pt-3 pl-3"><b>Species Name:</b></div>
       <div class="row pl-3"><%=sighting.species_name%></div>
 
@@ -178,15 +154,9 @@
     <% }) %>
   </tbody>
 </table>
-  </div>
-</section>
-<section>
-<div class="videoDisplay">
-  <p><span class="display"></span></p>
-</div>
-</section>
 
 </div>
-</body>
+
+  </body>
 
 <%-include('footer') %>
