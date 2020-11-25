@@ -5,6 +5,10 @@ import cookieParser from 'cookie-parser';
 import express from 'express';
 import { render } from 'ejs';
 
+// Constant Variable of process.env
+const SALT = process.env.MY_ENV_VAR;
+console.log(process.env);
+console.log(SALT, 'salt');
 // Set up Pooling with PostgresQL
 const { Pool } = pg;
 const poolConfig = {
@@ -30,8 +34,17 @@ app.use(methodOverride('_method'));
 // Middleware that allows request.cookies to be parsed
 app.use(cookieParser());
 
-// Function that includes the username(if logged-in ) from cookies into dataObj for rendering
+// Function that converts supplied username into a hash (using a salt)
 
+const convertUserIdToHash = (userId) => {
+  const shaObj = new jsSHA('SHA-512', 'TEXT', { encoding: 'UTF8' });
+  const unhashedCookieString = `${userId}-${SALT}`;
+  shaObj.update(unhashedCookieString);
+  const hashedCookieString = shaObj.getHash('HEX');
+  return hashedCookieString;
+};
+
+// Function that includes the username(if logged-in ) from cookies into dataObj for rendering
 const includeLoggedInUsername = (data, loggedInUserName, loggedInUserId) => {
   // If user is logged in, hence loggedInUserName exists in req cookie
   if (loggedInUserName) {
@@ -113,8 +126,22 @@ app.get('/note/:id/edit', (req, res) => {
   };
 
   // Perform validation on whether user can edit/delete a particular sighting
-  pool.query(`SELECT username FROM notes WHERE id=${id}`, (err, result) => {
-    if (req.cookies.loggedInUser !== result.rows[0].username) {
+  pool.query(`SELECT users.id FROM notes INNER JOIN users ON users.username = notes.username WHERE notes.id=${id}`, (err, result) => {
+    if (err) {
+      console.log(err);
+      return;
+    }
+    const { loggedInHash } = req.cookies;
+    const userIdFromNote = result.rows[0].id;
+    // Since we also want to verify whether the id of the note's author is the same
+    // as the id of the user access it, we hash the author's Id as well
+    const hashedUserIdAsPerNoteString = convertUserIdToHash(userIdFromNote);
+    console.log(userIdFromNote, 'test-2');
+    console.log(hashedUserIdAsPerNoteString, 'test-2');
+
+    // Here we compare the current user's id hash against
+    // the note's author's id hash
+    if (loggedInHash !== hashedUserIdAsPerNoteString) {
       res.status(403);
       res.render('displayErrorPage');
       return;
@@ -208,8 +235,12 @@ app.post('/signup', (req, res) => {
       return;
     }
     console.log(result.rows);
+    const hashedUserIdString = convertUserIdToHash(result.rows[0].id);
+    res.cookie('loggedInHash', hashedUserIdString);
+    res.cookie('loggedInUser', req.body.username);
+    res.cookie('loggedInUserId', result.rows[0].id);
+    res.render('successLogin');
   });
-  res.render('successLogin');
 });
 
 // Route handler that handles logins
@@ -223,27 +254,30 @@ app.post('/login', (req, res) => {
   const shaObj = new jsSHA('SHA-512', 'TEXT', { encoding: 'UTF8' });
   shaObj.update(req.body.password);
   const hash = shaObj.getHash('HEX');
-  // Perform check by first getting the data from database
-  pool.query(`SELECT username FROM users WHERE password='${hash}'`, (err, result) => {
+  console.log(hash);
+  pool.query(`SELECT users.id,users.username FROM users INNER JOIN notes ON users.username=notes.username WHERE password='${hash}'`, (err, result) => {
     if (err) {
       console.log(err, 'error');
-      return;
     }
     if (result.rows.length === 0) {
       res.status(403);
       res.render('displayErrorPage');
-      return;
     }
-    pool.query(`SELECT id FROM users WHERE username='${req.body.username}'`, (nextErr, nextResult) => {
-      res.cookie('loggedInUser', req.body.username);
-      res.cookie('loggedInUserId', nextResult.rows[0].id);
-      res.redirect('/user-dashboard');
-    });
+    // Perform hashing of username using username and salt and
+    // send out hashedString in cookie
+    const hashedUserIdString = convertUserIdToHash(result.rows[0].id);
+    console.log(result.rows[0].id, 'test-2');
+    console.log(hashedUserIdString, 'test-1');
+    res.cookie('loggedInHash', hashedUserIdString);
+    res.cookie('loggedInUser', req.body.username);
+    res.cookie('loggedInUserId', result.rows[0].id);
+    res.redirect('/user-dashboard');
   });
 });
 
 // Deletes cookie with associated username
 app.delete('/logout', (req, res) => {
+  res.clearCookie('loggedInHash');
   res.clearCookie('loggedInUser');
   res.clearCookie('loggedInUserId');
   res.redirect('/');
