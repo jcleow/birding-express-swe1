@@ -7,8 +7,6 @@ import { render } from 'ejs';
 
 // Constant Variable of process.env
 const SALT = process.env.MY_ENV_VAR;
-console.log(process.env);
-console.log(SALT, 'salt');
 // Set up Pooling with PostgresQL
 const { Pool } = pg;
 const poolConfig = {
@@ -56,7 +54,7 @@ const includeLoggedInUsername = (data, loggedInUserName, loggedInUserId) => {
 
 // Route: Render a form that will create a new note
 app.get('/note', (req, res) => {
-  res.render('submitNewBirdSightingForm');
+  res.render('navlinks/submitNewBirdSightingForm');
 });
 
 // Route: Accept a post request to create a new note
@@ -106,7 +104,7 @@ app.get('/', (req, res) => {
     // Add in current loggedInUser parameter to change navbar display
     allSightingsObj = includeLoggedInUsername(allSightingsObj,
       req.cookies.loggedInUser, req.cookies.loggedInUserId);
-    res.render('allBirdSightings', allSightingsObj);
+    res.render('mainpage/allBirdSightings', allSightingsObj);
   });
 });
 
@@ -136,9 +134,6 @@ app.get('/note/:id/edit', (req, res) => {
     // Since we also want to verify whether the id of the note's author is the same
     // as the id of the user access it, we hash the author's Id as well
     const hashedUserIdAsPerNoteString = convertUserIdToHash(userIdFromNote);
-    console.log(userIdFromNote, 'test-2');
-    console.log(hashedUserIdAsPerNoteString, 'test-2');
-
     // Here we compare the current user's id hash against
     // the note's author's id hash
     if (loggedInHash !== hashedUserIdAsPerNoteString) {
@@ -206,7 +201,7 @@ app.delete('/note/:id/delete', (req, res) => {
 
 // Route hanlder that renders signup form
 app.get('/signup', (req, res) => {
-  res.render('signup');
+  res.render('navlinks/signup');
 });
 
 // Route handler that submits signup details
@@ -234,18 +229,17 @@ app.post('/signup', (req, res) => {
       console.log('error', err.stack);
       return;
     }
-    console.log(result.rows);
     const hashedUserIdString = convertUserIdToHash(result.rows[0].id);
     res.cookie('loggedInHash', hashedUserIdString);
     res.cookie('loggedInUser', req.body.username);
     res.cookie('loggedInUserId', result.rows[0].id);
-    res.render('successLogin');
+    res.render('navlinks/successLogin');
   });
 });
 
 // Route handler that handles logins
 app.get('/login', (req, res) => {
-  res.render('login');
+  res.render('navlinks/login');
 });
 
 // Route handler that posts/submits login info to server for auth
@@ -254,7 +248,6 @@ app.post('/login', (req, res) => {
   const shaObj = new jsSHA('SHA-512', 'TEXT', { encoding: 'UTF8' });
   shaObj.update(req.body.password);
   const hash = shaObj.getHash('HEX');
-  console.log(hash);
   pool.query(`SELECT users.id,users.username FROM users INNER JOIN notes ON users.username=notes.username WHERE password='${hash}'`, (err, result) => {
     if (err) {
       console.log(err, 'error');
@@ -262,12 +255,11 @@ app.post('/login', (req, res) => {
     if (result.rows.length === 0) {
       res.status(403);
       res.render('displayErrorPage');
+      return;
     }
     // Perform hashing of username using username and salt and
     // send out hashedString in cookie
     const hashedUserIdString = convertUserIdToHash(result.rows[0].id);
-    console.log(result.rows[0].id, 'test-2');
-    console.log(hashedUserIdString, 'test-1');
     res.cookie('loggedInHash', hashedUserIdString);
     res.cookie('loggedInUser', req.body.username);
     res.cookie('loggedInUserId', result.rows[0].id);
@@ -337,14 +329,14 @@ app.get('/users/:id', (req, res) => {
         // This is an array
         data.selectedSpeciesData = data.sightings.filter((sighting) => sighting.species_name === speciesName);
       }
-      res.render('userBirdSighting', data);
+      res.render('navlinks/userBirdSighting', data);
     });
   });
 });
 
 // Render a form to create a new species
 app.get('/species/create', (req, res) => {
-  res.render('submitNewSpecies');
+  res.render('navlinks/submitNewSpecies');
 });
 
 // Submit a new species
@@ -371,7 +363,7 @@ app.get('/species/:index', (req, res) => {
 
   pool;
   // First select
-  res.render('speciesIndex');
+  res.render('/species/speciesIndex');
 });
 
 app.listen(PORT);

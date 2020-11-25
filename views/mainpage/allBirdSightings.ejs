@@ -1,0 +1,192 @@
+<%- include('headerAndNav') %>
+<body class='bg'>  
+<!-- First Section-->   
+<div class= "toCollapseShow" data-toggle="collapse" data-target="#collapseSightingsTable">
+  <div class="row">
+    <div class="col d-flex justify-content-center align-self-center backgroundDisplay">
+      <div class='displaySightings'>
+        <span>All Bird Sightings</span>
+      </div>
+    </div>
+  </div>
+  <div class='row'>
+    <div class='col d-flex justify-content-center align-self-center backgroundDisplay'>
+      <span><i class="fa fa-angle-double-down fa-3x"></i></span>
+    </div>
+  </div>
+</div> 
+
+<section>
+<div class="container-sm tableDisplay collapse" id="collapseSightingsTable">
+  <table class="table table-hover" class="collapse" data-parent="#overallAccordion">
+  <thead>
+    <tr>
+      <th scope="col">No.</th>
+      <th scope="col">Species Name</th>
+      <th scope="col">Habitat</th>
+      <th scope="col">Flock Size</th>
+      <th scope="col">Logged By</th>
+      <th scope="col">Actions</th>
+    </tr>
+  </thead>
+  <tbody id="accordion">
+    <% sightings.forEach((sighting,index)=>{ %>
+    <tr class= "accordion-toggle collapsed" data-toggle="collapse" data-target="#collapse<%=index%>">
+      <th scope="row"><%=sighting.id%></th>
+      <td><a href="/note/<%=sighting.id%>"><%=sighting.species_name%> </a> </td>
+      <td> <%=sighting.habitat%> </td>
+      <td> <%=sighting.flock_size%> </td>
+      <td> <%=sighting.username%></td>      
+    <td class='actionBtns'>
+      <div class="row">
+        <div class="col-sm-3">
+             <a href="/note/<%=sighting.id%>/edit" class="btn btn-warning" role="button">
+          Edit</a
+        >
+        </div>
+       <div class="col-sm-3"> 
+        <form action="/note/<%=sighting.id%>/delete?_method=DELETE" method="POST">
+          <input
+            type="submit"
+            class="btn btn-danger"
+            name="_method"
+            value="Delete"
+          />
+        </form>
+      </div>
+    </td>
+    <td class="expand-button"></td>
+    </tr>
+    <tr>
+    <td colspan="12">
+      <div id="collapse<%=index%>" class="collapse" data-parent="#accordion">
+                <div class="row pt-3 pl-3"><b>Species Name:</b></div>
+      <div class="row pl-3"><%=sighting.species_name%></div>
+
+      <div class="row pt-3 pl-3"><b>Habitat:</b></div>
+      <div class="row pl-3"><%=sighting.habitat%></div>
+
+      <div class="row pt-3 pl-3"><b>Date:</b></div>
+      <div class="row pl-3"><%=sighting.date_seen%></div>
+
+      <div class="row pt-3 pl-3"><b>Appearance:</b></div>
+      <div class="row pl-3"><%=sighting.appearance%></div>
+      
+      <div class="row pt-3 pl-3"><b>Behaviour:</b></div>
+      <div class="row pl-3"><%=sighting.behaviour%></div>
+
+      <div class="row pt-3 pl-3"><b>Vocalizations:</b></div>
+      <div class="row pl-3"><%=sighting.vocalizations%></div>
+
+      <div class="row pt-3 pl-3"><b>Flock Size</b></div>
+      <div class="row pl-3"><%=sighting.flock_size%></div>
+      </div>
+    </td>
+    </tr>    
+    <% }) %>
+  </tbody>
+</table>
+  </div>
+
+
+</section>
+
+
+<!-- Second Section on Species Viewed-->
+<section>
+<div class= "toCollapseShow" data-toggle="collapse" data-target="#collapseSpeciesTable">
+  <div class="row">
+    <div class="col d-flex justify-content-center align-self-center backgroundDisplay">
+      <div class='displaySightings2'>
+        <span>All Species Recorded</span>
+      </div>
+    </div>
+  </div>
+  <div class='row'>
+    <div class='col d-flex justify-content-center align-self-center backgroundDisplay angleArrows'>
+      <span><i class="fa fa-angle-double-down fa-3x"></i></span>
+    </div>
+  </div>
+</div> 
+
+<div class="container-sm tableDisplay collapse" id="collapseSpeciesTable">
+  <table class="table table-hover tableBackground" class="collapse" data-parent="#overallAccordion">
+  <thead>
+    <tr>
+      <th scope="col">No.</th>
+      <th scope="col">Species Name</th>
+      <th scope="col">Habitat</th>
+      <th scope="col">Flock Size</th>
+      <th scope="col">Logged By</th>
+      <th scope="col">Actions</th>
+    </tr>
+  </thead>
+  <tbody id="accordion2">
+    <% sightings.forEach((sighting,index)=>{ %>
+    <tr class= "accordion-toggle collapsed" data-toggle="collapse" data-target="#collapse<%=index%>">
+      <th scope="row"><%=sighting.id%></th>
+      <td><a href="/note/<%=sighting.id%>"><%=sighting.species_name%> </a> </td>
+      <td> <%=sighting.habitat%> </td>
+      <td> <%=sighting.flock_size%> </td>
+      <td> <%=sighting.username%></td>      
+    <td class='actionBtns'>
+      <div class="row">
+        <div class="col-sm-3">
+             <a href="/note/<%=sighting.id%>/edit" class="btn btn-warning" role="button">
+          Edit</a
+        >
+        </div>
+       <div class="col-sm-3"> 
+        <form action="/note/<%=sighting.id%>/delete?_method=DELETE" method="POST">
+          <input
+            type="submit"
+            class="btn btn-danger"
+            name="_method"
+            value="Delete"
+          />
+        </form>
+      </div>
+    </td>
+    <td class="expand-button"></td>
+    </tr>
+    <tr>
+    <td colspan="12">
+      <div id="collapse<%=index%>" class="collapse" data-parent="#accordion2">
+                <div class="row pt-3 pl-3"><b>Species Name:</b></div>
+      <div class="row pl-3"><%=sighting.species_name%></div>
+
+      <div class="row pt-3 pl-3"><b>Habitat:</b></div>
+      <div class="row pl-3"><%=sighting.habitat%></div>
+
+      <div class="row pt-3 pl-3"><b>Date:</b></div>
+      <div class="row pl-3"><%=sighting.date_seen%></div>
+
+      <div class="row pt-3 pl-3"><b>Appearance:</b></div>
+      <div class="row pl-3"><%=sighting.appearance%></div>
+      
+      <div class="row pt-3 pl-3"><b>Behaviour:</b></div>
+      <div class="row pl-3"><%=sighting.behaviour%></div>
+
+      <div class="row pt-3 pl-3"><b>Vocalizations:</b></div>
+      <div class="row pl-3"><%=sighting.vocalizations%></div>
+
+      <div class="row pt-3 pl-3"><b>Flock Size</b></div>
+      <div class="row pl-3"><%=sighting.flock_size%></div>
+      </div>
+    </td>
+    </tr>    
+    <% }) %>
+  </tbody>
+</table>
+  </div>
+</section>
+<section>
+<div class="videoDisplay">
+  <p><span class="display"></span></p>
+</div>
+</section>
+
+</div>
+</body>
+
+<%-include('footer') %>

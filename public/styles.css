@@ -15,8 +15,17 @@
 }
 
 .backgroundDisplay .displaySightings {
-  padding: 135px;
-  height: 300px;
+  padding-top: 280px;
+  height: 320px;
+  position: relative;
+  color: white;
+  font-size: 30px;
+  z-index: 2;
+}
+
+.backgroundDisplay .displaySightings2 {
+  padding-top: 200px;
+  height: 240px;
   position: relative;
   color: white;
   font-size: 30px;
@@ -159,4 +168,12 @@ h1 .display {
 
 .viewingList {
   text-align: center;
+}
+
+.angleArrows {
+  height: 100px;
+}
+
+.bg {
+  background: rgba(240, 243, 245, 0.687);
 }
