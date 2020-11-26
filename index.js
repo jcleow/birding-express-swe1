@@ -251,7 +251,7 @@ app.post('/login', (req, res) => {
   const shaObj = new jsSHA('SHA-512', 'TEXT', { encoding: 'UTF8' });
   shaObj.update(req.body.password);
   const hash = shaObj.getHash('HEX');
-  pool.query(`SELECT users.id,users.username FROM users INNER JOIN notes ON users.username=notes.username WHERE password='${hash}'`, (err, result) => {
+  pool.query(`SELECT id from users WHERE password='${hash}'`, (err, result) => {
     if (err) {
       console.log(err, 'error');
     }
@@ -301,15 +301,15 @@ app.get('/users/:id', (req, res) => {
   const { id } = req.params;
   const { species_name: speciesName } = req.query;
   // First select username based on id provided in url
-  pool.query(`SELECT username FROM users WHERE id= ${id}`, (err, result) => {
+  pool.query(`SELECT id,username FROM users WHERE id= ${id}`, (err, result) => {
     if (err) {
       console.log('err', err);
       return;
     }
-    const { user_id: userId } = result.rows[0];
+    const { id: userId } = result.rows[0];
     console.log(result.rows[0], 'test-6');
     // Next select all objects that is associated with said username
-    pool.query(`SELECT * FROM notes WHERE user_id='${userId}'`, (nextErr, nextResult) => {
+    pool.query(`SELECT * FROM notes WHERE user_id=${userId}`, (nextErr, nextResult) => {
       if (nextErr) {
         console.log('err', err);
         return;
