@@ -26,14 +26,19 @@
     <label for="appearance">Appearance</label>
     <input type="textarea" class="form-control" id="appearance" name='appearance' placeholder="Please describe in copious details!">
   </div>
+  
   <div class="form-group">
-    <label for="behaviour">Behaviour</label>
-    <input type="textarea" class="form-control" id="behaviour" name='behaviour'placeholder="Please describe in copious details!">
+    <div>
+      <label for="behaviour">Behaviours</label>
+    </div>
     <% behaviours.forEach((behaviour)=>{ %>
-      <input type="checkbox" name="behaviourNum" value="<%= behaviour.id %>"/>
-      <label><%=behaviour.name%></label>
-    <% }) %>
+    <div class="form-check form-check-inline">
+        <input class="form-check-input" type="checkbox" id="behaviour" name="behaviour" value="<%= behaviour.id %>"/>
+        <label class="form-check-label"><%=behaviour.name%></label>
+    </div>
+      <% }) %>
   </div>
+  
   <div class="form-row">
     <div class="form-group col-md-6">
       <label for="vocalisations">Vocalizations</label>

@@ -16,7 +16,13 @@
       <div class="row pl-3"><%=appearance%></div>
       
       <div class="row pt-3 pl-3"><b>Behaviour:</b></div>
-      <div class="row pl-3"><%=behaviour%></div>
+
+      <div class="row pl-3">
+      <% behaviours.forEach((behaviour) =>{ %>
+        <%=behaviour.name%>
+      <% }); %>
+      </div>
+      
 
       <div class="row pt-3 pl-3"><b>Vocalizations:</b></div>
       <div class="row pl-3"><%=vocalizations%></div>

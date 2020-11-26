@@ -99,7 +99,7 @@ app.post('/note', (req, res) => {
     if (key === 'date_seen') {
       return Date(value).toString();
     }
-    if (key === 'behaviourNum') {
+    if (key === 'behaviour') {
       // First obtain the
       pool.query('SELECT last_value from notes_id_seq', (err, result) => {
         if (err) {
@@ -131,13 +131,14 @@ app.post('/note', (req, res) => {
     }
     return value;
   });
-  // To remove behaviourNum at the 6th position from the notes database insertion for now.
+  // To remove behaviour position from the notes database insertion for now since
+  // it can contain multiple values
   newNoteArray.splice(newNoteArray.indexOf('behaviour'), 1);
-
+  console.log(newNoteArray, 'test-2');
   // To include in loggedInUserId to store in database
   newNoteArray.push(req.cookies.loggedInUserId);
   const insertNoteQuery = {
-    text: 'INSERT INTO notes(species_name,habitat,date_seen,appearance,behaviour,vocalizations,flock_size,user_id) VALUES($1,$2,$3,$4,$5,$6,$7,$8) RETURNING * ',
+    text: 'INSERT INTO notes(species_name,habitat,date_seen,appearance,vocalizations,flock_size,user_id) VALUES($1,$2,$3,$4,$5,$6,$7) RETURNING * ',
     values: newNoteArray,
   };
   pool.query(insertNoteQuery, (err, result) => {
@@ -153,19 +154,30 @@ app.post('/note', (req, res) => {
 // Route: Render a single note.
 app.get('/note/:id', (req, res) => {
   const { id } = req.params;
-  pool.query(`SELECT * FROM notes INNER JOIN users ON users.id=user_id WHERE notes.id=${id}`, (err, result) => {
+  pool.query(`SELECT *,notes.id AS id FROM notes INNER JOIN users ON users.id=user_id WHERE notes.id=${id}`, (err, result) => {
+    // Get all data from notes table, include author's user id and username
     let data = result.rows[0];
-    console.log(result.rows, 'test-5');
+    console.log(data, 'data-test-test');
+    // Get all data from notes table, include loggedin User's id and username
     data = includeLoggedInUsername(data, req.cookies.loggedInUser, req.cookies.loggedInUserId);
-    console.log(data, 'test-1');
-    res.render('birdSighting', data);
+    console.log(data, 'test-3');
+    pool.query(`SELECT name FROM behaviours INNER JOIN notes_behaviours ON behaviours.id=behaviour_id WHERE notes_behaviours.note_id=${id}`, (behaviourErr, behaviourResult) => {
+      if (behaviourErr) {
+        console.log(behaviourErr, 'behaviourErr');
+        return;
+      }
+      console.log(behaviourResult.rows, 'result');
+      // Store all behaviour data into an array
+      data.behaviours = behaviourResult.rows;
+      res.render('birdSighting', data);
+    });
   });
 });
 
 // Route: Render a list of notes
 app.get('/', (req, res) => {
   const getAllNotesQuery = {
-    text: 'SELECT notes.id,species_name,habitat,date_seen,appearance,behaviour,vocalizations,flock_size,username FROM notes INNER JOIN users ON user_id=users.id ',
+    text: 'SELECT *, notes.id AS id FROM notes INNER JOIN users ON user_id=users.id ',
   };
   pool.query(getAllNotesQuery, (err, result) => {
     if (err) {
@@ -196,7 +208,6 @@ app.get('/note/:id/edit', (req, res) => {
       const data = nextResult.rows[0];
       data.behaviours = behavioursDataArray;
       console.log(data, 'data-test');
-
       res.render('editExistingBirdSightingForm', nextResult.rows[0]);
     });
   };
@@ -209,6 +220,7 @@ app.get('/note/:id/edit', (req, res) => {
     }
     // Perform validation against hashcode in cookies
     const { loggedInHash } = req.cookies;
+    console.log(result.rows[0], 'user-id');
     const userIdFromNote = result.rows[0].user_id;
     // Since we also want to verify whether the id of the note's author is the same
     // as the id of the user access it, we hash the author's Id as well
@@ -227,7 +239,7 @@ app.get('/note/:id/edit', (req, res) => {
 
 // Route: Edit a sighting
 app.put('/note/:id/edit', (req, res) => {
-  console.log(req.body, 'req.body');
+  console.log(req.body, 'req.body update');
   const { id } = req.params;
   let textQuery = 'UPDATE notes SET';
 
@@ -245,8 +257,8 @@ app.put('/note/:id/edit', (req, res) => {
 
     if (key === 'behaviourNum') {
       // Insert the associated behaviourNums to join table notes_behaviours
-      value.forEach((num) => {
-        pool.query(`INSERT INTO notes_behaviours(note_id,behaviour_id) VALUES (${id},${num}) RETURNING *`, (err, result) => {
+      value.forEach((behaviourId) => {
+        pool.query(`UPDATE notes_behaviours SET behaviour_id=${behaviourId} WHERE note_id = ${id} RETURNING *`, (err, result) => {
           if (err) {
             console.log(err, 'insert behaviour into join table error');
           }

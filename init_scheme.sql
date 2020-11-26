@@ -7,4 +7,4 @@ INSERT INTO species(name,scientific_name) VALUES('Asian Koel','Eudynamys scolopa
 
 CREATE TABLE behaviours(id SERIAL PRIMARY KEY, name TEXT);
 
-CREATE TABLE notes_behaviours (id SERIAL PRIMARY KEY, notes_id INTEGER, behaviour_id INTEGER);
+CREATE TABLE notes_behaviours (id SERIAL PRIMARY KEY, note_id INTEGER, behaviour_id INTEGER);
