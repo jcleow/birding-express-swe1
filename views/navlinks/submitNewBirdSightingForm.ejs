@@ -28,7 +28,11 @@
   </div>
   <div class="form-group">
     <label for="behaviour">Behaviour</label>
-    <input type="textarea" class="form-control" id="behaviour" name='behaviour' placeholder="Please describe in copious details!">
+    <input type="textarea" class="form-control" id="behaviour" name='behaviour'placeholder="Please describe in copious details!">
+    <% behaviours.forEach((behaviour)=>{ %>
+      <input type="checkbox" name="behaviourNum" value="<%= behaviour.id %>"/>
+      <label><%=behaviour.name%></label>
+    <% }) %>
   </div>
   <div class="form-row">
     <div class="form-group col-md-6">

@@ -4,3 +4,7 @@ CREATE TABLE notes (id SERIAL PRIMARY KEY, species_name TEXT,habitat TEXT, date_
 
 CREATE TABLE species(id SERIAL PRIMARY KEY, name TEXT, scientific_name TEXT);
 INSERT INTO species(name,scientific_name) VALUES('Asian Koel','Eudynamys scolopaceus');
+
+CREATE TABLE behaviours(id SERIAL PRIMARY KEY, name TEXT);
+
+CREATE TABLE notes_behaviours (id SERIAL PRIMARY KEY, notes_id INTEGER, behaviour_id INTEGER);

@@ -52,19 +52,89 @@ const includeLoggedInUsername = (data, loggedInUserName, loggedInUserId) => {
   return data;
 };
 
+// TO BE INCLUDED Perform user authentication using req.cookies hashcodes
+const checkIfUserIsAuthenticated = (reqCookies, result, response) => {
+// Perform validation against hashcode in cookies
+  const { loggedInHash } = reqCookies;
+  const userIdFromNote = result.rows[0].user_id;
+  // Since we also want to verify whether the id of the note's author is the same
+  // as the id of the user access it, we hash the author's Id as well
+  const hashedUserIdAsPerNoteString = convertUserIdToHash(userIdFromNote);
+  // Here we compare the current user's id hash against
+  // the note's author's id hash
+  if (loggedInHash !== hashedUserIdAsPerNoteString) {
+    response.status(403);
+    response.render('displayErrorPage');
+  }
+};
+
+// Get all behaviour types from database
+const getAllBehaviourTypes = (callback) => {
+  pool.query('SELECT * from behaviours', (behaviourErr, behaviourResult) => {
+    if (behaviourErr) {
+      console.log(behaviourErr, 'err getting behaviours');
+    }
+    const allBehavioursArray = behaviourResult.rows;
+    if (callback) {
+      callback(allBehavioursArray);
+    }
+  });
+};
+
 // Route: Render a form that will create a new note
 app.get('/note', (req, res) => {
-  res.render('navlinks/submitNewBirdSightingForm');
+  getAllBehaviourTypes((allBehavioursArray) => {
+    console.log(allBehavioursArray, 'test');
+    const allBehaviourData = {};
+    allBehaviourData.behaviours = allBehavioursArray;
+    console.log(allBehaviourData);
+    res.render('navlinks/submitNewBirdSightingForm', allBehaviourData);
+  });
 });
 
 // Route: Accept a post request to create a new note
 app.post('/note', (req, res) => {
   const newNoteArray = Object.entries(req.body).map(([key, value]) => {
+  // Obtain the index of BehaviourNum Variable and remove from array of values to be inserted
     if (key === 'date_seen') {
       return Date(value).toString();
     }
+    if (key === 'behaviourNum') {
+      // First obtain the
+      pool.query('SELECT last_value from notes_id_seq', (err, result) => {
+        if (err) {
+          console.log(err, 'error with selecting notes\' last value');
+        }
+        // This is the latest sequence in 'notes' table
+        // Need to do this as id of an entry may be deleted
+        const lastNotesId = Number(result.rows[0].last_value);
+        console.log(lastNotesId, 'lastNotesId');
+
+        // Check if value is an array. If it is, it means multiple boxes are checked
+        // If it is not means only 1 box is checked
+        if (Array.isArray(value)) {
+          value.forEach((num) => {
+          // Need to increment by 1 to lastNotesId as upon creation of this
+          // note, the sequence will increase by 1 to output the latest id
+            pool.query(`INSERT INTO notes_behaviours(note_id,behaviour_id) 
+          VALUES (${lastNotesId + 1},${num}) RETURNING *`, (insertErr, insertResult) => {
+              if (insertErr) {
+                console.log(insertErr, 'insert behaviour into join table error');
+              }
+              console.log(insertResult.rows[0], 'behaviour-insertion to join table');
+            });
+          });
+        }
+      });
+      const dummyVar = 'behaviour';
+      return dummyVar;
+    }
     return value;
   });
+  // To remove behaviourNum at the 6th position from the notes database insertion for now.
+  newNoteArray.splice(newNoteArray.indexOf('behaviour'), 1);
+
+  // To include in loggedInUserId to store in database
   newNoteArray.push(req.cookies.loggedInUserId);
   const insertNoteQuery = {
     text: 'INSERT INTO notes(species_name,habitat,date_seen,appearance,behaviour,vocalizations,flock_size,user_id) VALUES($1,$2,$3,$4,$5,$6,$7,$8) RETURNING * ',
@@ -95,7 +165,7 @@ app.get('/note/:id', (req, res) => {
 // Route: Render a list of notes
 app.get('/', (req, res) => {
   const getAllNotesQuery = {
-    text: 'SELECT notes.id,species_name,habitat,flock_size,username FROM notes INNER JOIN users ON user_id=users.id ',
+    text: 'SELECT notes.id,species_name,habitat,date_seen,appearance,behaviour,vocalizations,flock_size,username FROM notes INNER JOIN users ON user_id=users.id ',
   };
   pool.query(getAllNotesQuery, (err, result) => {
     if (err) {
@@ -114,14 +184,19 @@ app.get('/', (req, res) => {
 // Render the edit form
 app.get('/note/:id/edit', (req, res) => {
   const { id } = req.params;
-  // Subsequent callback function that runs after validating username
-  const renderEditForm = () => {
+
+  // Subsequent callback function that renders edit form after validating username
+  const renderEditForm = (behavioursDataArray) => {
     const getExistingNoteQuery = (`SELECT * FROM notes WHERE id=${id}`);
     pool.query(getExistingNoteQuery, (nextErr, nextResult) => {
       if (nextErr) {
         console.log(nextErr, 'nextErr');
         return;
       }
+      const data = nextResult.rows[0];
+      data.behaviours = behavioursDataArray;
+      console.log(data, 'data-test');
+
       res.render('editExistingBirdSightingForm', nextResult.rows[0]);
     });
   };
@@ -132,6 +207,7 @@ app.get('/note/:id/edit', (req, res) => {
       console.log(err);
       return;
     }
+    // Perform validation against hashcode in cookies
     const { loggedInHash } = req.cookies;
     const userIdFromNote = result.rows[0].user_id;
     // Since we also want to verify whether the id of the note's author is the same
@@ -145,24 +221,43 @@ app.get('/note/:id/edit', (req, res) => {
       return;
     }
     // If valid,
-    renderEditForm();
+    getAllBehaviourTypes(renderEditForm);
   });
 });
 
 // Route: Edit a sighting
 app.put('/note/:id/edit', (req, res) => {
+  console.log(req.body, 'req.body');
   const { id } = req.params;
   let textQuery = 'UPDATE notes SET';
 
   Object.entries(req.body).forEach(([key, value]) => {
     if (key === 'flock_size') {
       textQuery += ` ${key}=${Number(value)}`;
-    } else if (key === 'date_seen') {
+      return;
+    }
+
+    if (key === 'date_seen') {
       // replace the query with $ notation
       textQuery += `${key}= $1,`;
-    } else {
-      textQuery += ` ${key}='${value}',`;
+      return;
     }
+
+    if (key === 'behaviourNum') {
+      // Insert the associated behaviourNums to join table notes_behaviours
+      value.forEach((num) => {
+        pool.query(`INSERT INTO notes_behaviours(note_id,behaviour_id) VALUES (${id},${num}) RETURNING *`, (err, result) => {
+          if (err) {
+            console.log(err, 'insert behaviour into join table error');
+          }
+          console.log(result.rows[0], 'behaviour-insertion to join table');
+        });
+      });
+
+      return;
+    }
+
+    textQuery += ` ${key}='${value}',`;
   });
   textQuery += ` WHERE id=${id} RETURNING *;`;
 
@@ -192,9 +287,22 @@ app.delete('/note/:id/delete', (req, res) => {
   };
 
   // Perform validation on whether user can edit/delete a particular sighting
-  pool.query(`SELECT username FROM notes WHERE id=${id}`, (err, result) => {
-    if (req.cookies.loggedInUser !== result.rows[0].username) {
-      res.status(403).send('You are not allowed to delete this sighting');
+  pool.query(`SELECT user_id FROM notes WHERE id=${id}`, (err, result) => {
+    if (err) {
+      console.log(err);
+      return;
+    }
+    // Perform validation against hashcode in cookies
+    const { loggedInHash } = req.cookies;
+    const userIdFromNote = result.rows[0].user_id;
+    // Since we also want to verify whether the id of the note's author is the same
+    // as the id of the user access it, we hash the author's Id as well
+    const hashedUserIdAsPerNoteString = convertUserIdToHash(userIdFromNote);
+    // Here we compare the current user's id hash against
+    // the note's author's id hash
+    if (loggedInHash !== hashedUserIdAsPerNoteString) {
+      res.status(403);
+      res.render('displayErrorPage');
       return;
     }
     // If valid,
