@@ -65,9 +65,9 @@ app.post('/note', (req, res) => {
     }
     return value;
   });
-  newNoteArray.push(req.cookies.loggedInUser);
+  newNoteArray.push(req.cookies.loggedInUserId);
   const insertNoteQuery = {
-    text: 'INSERT INTO notes(species_name,habitat,date_seen,appearance,behaviour,vocalizations,flock_size,username) VALUES($1,$2,$3,$4,$5,$6,$7,$8) RETURNING * ',
+    text: 'INSERT INTO notes(species_name,habitat,date_seen,appearance,behaviour,vocalizations,flock_size,user_id) VALUES($1,$2,$3,$4,$5,$6,$7,$8) RETURNING * ',
     values: newNoteArray,
   };
   pool.query(insertNoteQuery, (err, result) => {
@@ -83,9 +83,11 @@ app.post('/note', (req, res) => {
 // Route: Render a single note.
 app.get('/note/:id', (req, res) => {
   const { id } = req.params;
-  pool.query(`SELECT * FROM notes WHERE id=${id}`, (err, result) => {
+  pool.query(`SELECT * FROM notes INNER JOIN users ON users.id=user_id WHERE notes.id=${id}`, (err, result) => {
     let data = result.rows[0];
+    console.log(result.rows, 'test-5');
     data = includeLoggedInUsername(data, req.cookies.loggedInUser, req.cookies.loggedInUserId);
+    console.log(data, 'test-1');
     res.render('birdSighting', data);
   });
 });
@@ -93,13 +95,14 @@ app.get('/note/:id', (req, res) => {
 // Route: Render a list of notes
 app.get('/', (req, res) => {
   const getAllNotesQuery = {
-    text: 'SELECT * FROM notes',
+    text: 'SELECT notes.id,species_name,habitat,flock_size,username FROM notes INNER JOIN users ON user_id=users.id ',
   };
   pool.query(getAllNotesQuery, (err, result) => {
     if (err) {
       console.log(err, 'error');
       return;
     }
+    console.log(result.rows, 'result-1');
     let allSightingsObj = { sightings: result.rows };
     // Add in current loggedInUser parameter to change navbar display
     allSightingsObj = includeLoggedInUsername(allSightingsObj,
@@ -124,13 +127,13 @@ app.get('/note/:id/edit', (req, res) => {
   };
 
   // Perform validation on whether user can edit/delete a particular sighting
-  pool.query(`SELECT users.id FROM notes INNER JOIN users ON users.username = notes.username WHERE notes.id=${id}`, (err, result) => {
+  pool.query(`SELECT user_id FROM notes WHERE id=${id}`, (err, result) => {
     if (err) {
       console.log(err);
       return;
     }
     const { loggedInHash } = req.cookies;
-    const userIdFromNote = result.rows[0].id;
+    const userIdFromNote = result.rows[0].user_id;
     // Since we also want to verify whether the id of the note's author is the same
     // as the id of the user access it, we hash the author's Id as well
     const hashedUserIdAsPerNoteString = convertUserIdToHash(userIdFromNote);
@@ -303,9 +306,10 @@ app.get('/users/:id', (req, res) => {
       console.log('err', err);
       return;
     }
-    const { username } = result.rows[0];
+    const { user_id: userId } = result.rows[0];
+    console.log(result.rows[0], 'test-6');
     // Next select all objects that is associated with said username
-    pool.query(`SELECT * FROM notes WHERE username='${username}'`, (nextErr, nextResult) => {
+    pool.query(`SELECT * FROM notes WHERE user_id='${userId}'`, (nextErr, nextResult) => {
       if (nextErr) {
         console.log('err', err);
         return;
