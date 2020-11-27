@@ -154,22 +154,35 @@ app.post('/note', (req, res) => {
 // Route: Render a single note.
 app.get('/note/:id', (req, res) => {
   const { id } = req.params;
+  console.log(req.body);
+
+  // Function that appends comments into the data that is to be parsed into ejs
+  const getAndRenderCommentsFromDb = (data) => {
+    pool.query(`SELECT username,comment FROM users_notes INNER JOIN users ON users.id= user_id WHERE note_id=${id} AND user_id=users.id`, (err, result) => {
+      if (err) {
+        console.log(err, 'err getting comments from db');
+        return;
+      }
+      // Append comments into the data object
+      console.log(result.rows, 'result-rows');
+      data.comments = result.rows;
+      // End the res-req cycle
+      res.render('birdSighting', data);
+    });
+  };
+  // Get all data from notes table, include author's user id and username
   pool.query(`SELECT *,notes.id AS id FROM notes INNER JOIN users ON users.id=user_id WHERE notes.id=${id}`, (err, result) => {
-    // Get all data from notes table, include author's user id and username
     let data = result.rows[0];
-    console.log(data, 'data-test-test');
     // Get all data from notes table, include loggedin User's id and username
     data = includeLoggedInUsername(data, req.cookies.loggedInUser, req.cookies.loggedInUserId);
-    console.log(data, 'test-3');
     pool.query(`SELECT name FROM behaviours INNER JOIN notes_behaviours ON behaviours.id=behaviour_id WHERE notes_behaviours.note_id=${id}`, (behaviourErr, behaviourResult) => {
       if (behaviourErr) {
         console.log(behaviourErr, 'behaviourErr');
         return;
       }
-      console.log(behaviourResult.rows, 'result');
       // Store all behaviour data into an array
       data.behaviours = behaviourResult.rows;
-      res.render('birdSighting', data);
+      getAndRenderCommentsFromDb(data);
     });
   });
 });
@@ -241,8 +254,39 @@ app.get('/note/:id/edit', (req, res) => {
 app.put('/note/:id/edit', (req, res) => {
   console.log(req.body, 'req.body update');
   const { id } = req.params;
+  let behaviourNumArray = [];
   let textQuery = 'UPDATE notes SET';
 
+  async function updateBehaviours(ArrayOfBehaviours) {
+    // First Query the database to delete the existing behaviours associated with the note
+    pool.query(`DELETE FROM notes_behaviours WHERE note_id=${id}`, (err, result) => {
+      if (err) {
+        console.log(err);
+        return;
+      }
+      // Next re-insert the new behavours for each of the ids provided in arrayofbehaviours
+      ArrayOfBehaviours.forEach((behaviourId) => {
+        pool.query(`INSERT INTO notes_behaviours(note_id,behaviour_id) VALUES(${id},${behaviourId}) `, (nextErr, nextResult) => {
+          if (nextErr) {
+            console.log(nextErr, 'insert behaviour into join table error');
+          }
+          console.log(nextResult.rows[0], 'behaviour-insertion to join table');
+        });
+      });
+    });
+  }
+  const updateEditSightingsPage = () => {
+    // append the date to update within the array argument
+    pool.query(textQuery, [new Date(req.body.date_seen)], (err, result) => {
+      if (err) {
+        console.log(err, 'error');
+        return;
+      }
+      res.redirect(`/note/${id}`);
+    });
+  };
+
+  // Iterate through the req.body key value pair to get some value
   Object.entries(req.body).forEach(([key, value]) => {
     if (key === 'flock_size') {
       textQuery += ` ${key}=${Number(value)}`;
@@ -256,31 +300,21 @@ app.put('/note/:id/edit', (req, res) => {
     }
 
     if (key === 'behaviourNum') {
-      // Insert the associated behaviourNums to join table notes_behaviours
-      value.forEach((behaviourId) => {
-        pool.query(`UPDATE notes_behaviours SET behaviour_id=${behaviourId} WHERE note_id = ${id} RETURNING *`, (err, result) => {
-          if (err) {
-            console.log(err, 'insert behaviour into join table error');
-          }
-          console.log(result.rows[0], 'behaviour-insertion to join table');
-        });
-      });
-
+      // Store all the selected behaviourNum in an array
+      if (Array.isArray(value)) {
+        behaviourNumArray = value;
+      } else {
+        behaviourNumArray.push(value);
+      }
       return;
     }
-
+    // for all other key value pairs
     textQuery += ` ${key}='${value}',`;
   });
   textQuery += ` WHERE id=${id} RETURNING *;`;
-
-  // append the date to update within the array argument
-  pool.query(textQuery, [new Date(req.body.date_seen)], (err, result) => {
-    if (err) {
-      console.log(err, 'error');
-      return;
-    }
-    res.redirect(`/note/${id}`);
-  });
+  // Update the behaviours asynchronously first
+  // once complete, proceed to update the rest of the info asynchronously
+  updateBehaviours(behaviourNumArray).then(updateEditSightingsPage);
 });
 
 // Route handler that deletes an sighting from the list
@@ -320,6 +354,26 @@ app.delete('/note/:id/delete', (req, res) => {
     // If valid,
     deleteSighting();
   });
+});
+
+// Route handler that posts comments on a given note
+app.post('/note/:id/comment', (req, res) => {
+  console.log(req.body, 'output');
+  const { id } = req.params;
+  const { comment } = req.body;
+  const { loggedInUserId } = req.cookies;
+  if (comment != '') {
+    const insertCommentQuery = (`INSERT INTO users_notes(comment,note_id,user_id) VALUES('${comment}',${id},${loggedInUserId}) RETURNING *`);
+    pool.query(insertCommentQuery, (err, result) => {
+      if (err) {
+        console.log(err, 'error during inserting comments');
+        return;
+      }
+      res.redirect(`/note/${id}`);
+    });
+  } else {
+    res.redirect(`/note/${id}`);
+  }
 });
 
 // Route hanlder that renders signup form
