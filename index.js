@@ -9,18 +9,28 @@ import { render } from 'ejs';
 const SALT = process.env.MY_ENV_VAR;
 // Set up Pooling with PostgresQL
 const { Pool } = pg;
-const poolConfig = {
-  user: process.env.USER,
-  host: 'localhost',
-  database: 'birding',
-  port: 5432, // Postgres server always runs on this port
-};
+let poolConfig;
+if (process.env.ENV === 'PRODUCTION') {
+  poolConfig = {
+    user: process.env.DB_PASSWORD,
+    host: 'localhost',
+    database: 'birding',
+    port: 5432, // Postgres server always runs on this port
+  };
+} else {
+  poolConfig = {
+    user: process.env.USER,
+    host: 'localhost',
+    database: 'birding',
+    port: 5432, // Postgres server always runs on this port
+  };
+}
 // Create a new instance of Pool object
 const pool = new Pool(poolConfig);
 
 // Set up Express app;
 const app = express();
-const PORT = 3000;
+const PORT = process.argv[2];
 // Set view engine to ejs
 app.set('view engine', 'ejs');
 // To parse encoded incoming requests  with urlencoded payloads
