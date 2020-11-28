@@ -1,0 +1,1 @@
+INSERT INTO notes(species_name,habitat,date_seen,appearance,behaviour,vocalizations,flock_size,user_id) VALUES ('Peacock','Zoo','12/25/2000','looks like a peacock','behaviour','vocalizations',1,100);
