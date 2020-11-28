@@ -13,4 +13,4 @@ INSERT INTO species(name,scientific_name) VALUES('special','scientific name');
 INSERT INTO users(first_name,last_name,address) VALUES('test','test','test');
 
 -- users_notes 
-INSERT INTO users(comment,user_id,note_id) VALUES('test',1,1);
+INSERT INTO users_notes(comment,user_id,note_id) VALUES('test',1,1);
