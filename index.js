@@ -12,7 +12,7 @@ let poolConfig;
 if (process.env.ENV === 'PRODUCTION') {
   poolConfig = {
     user: process.env.DB_PASSWORD,
-    host: 'localhost',
+    host: 'ip-172-31-35-83',
     database: 'birding',
     port: 5432, // Postgres server always runs on this port
   };
