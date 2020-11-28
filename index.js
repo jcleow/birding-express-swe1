@@ -3,7 +3,6 @@ import jsSHA from 'jssha';
 import methodOverride from 'method-override';
 import cookieParser from 'cookie-parser';
 import express from 'express';
-import { render } from 'ejs';
 
 // Constant Variable of process.env
 const SALT = process.env.MY_ENV_VAR;
@@ -207,7 +206,6 @@ app.get('/', (req, res) => {
       console.log(err, 'error');
       return;
     }
-    console.log(result.rows, 'result-1');
     let allSightingsObj = { sightings: result.rows };
     // Add in current loggedInUser parameter to change navbar display
     allSightingsObj = includeLoggedInUsername(allSightingsObj,
