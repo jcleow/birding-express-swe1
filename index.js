@@ -11,10 +11,12 @@ const { Pool } = pg;
 let poolConfig;
 if (process.env.ENV === 'PRODUCTION') {
   poolConfig = {
-    user: process.env.DB_PASSWORD,
+    user: 'postgres',
+    // set DB_PASSWORD as an environment variable for security.
+    password: process.env.DB_PASSWORD,
     host: 'localhost',
     database: 'birding',
-    port: 5432, // Postgres server always runs on this port
+    port: 5432,
   };
 } else {
   poolConfig = {
