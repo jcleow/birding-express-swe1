@@ -497,47 +497,6 @@ app.get('/user-dashboard', (req, res) => {
   });
 });
 
-// // Render a user's sighting page
-// app.get('/users/:id', (req, res) => {
-//   const { id } = req.params;
-//   const { species_name: speciesName } = req.query;
-//   // First select username based on id provided in url
-//   pool.query(`SELECT id,username FROM users WHERE id= ${id}`, (err, result) => {
-//     if (err) {
-//       console.log('err', err);
-//       return;
-//     }
-//     const { id: userId } = result.rows[0];
-//     // Next select all objects that is associated with said username
-//     pool.query(`SELECT * FROM notes WHERE user_id=${userId}`, (nextErr, nextResult) => {
-//       if (nextErr) {
-//         console.log('err', err);
-//         return;
-//       }
-//       let data = {};
-//       data.sightings = nextResult.rows;
-//       // This loggedInUser refers to user who is currently logged in
-//       data = includeLoggedInUsername(data, req.loggedInUser, req.loggedInUserId);
-
-//       // Get a list of unique species names to view in dropdown button
-//       const listView = [];
-//       data.sightings.forEach((sighting) => {
-//         if (!listView.includes(sighting.species_name)) {
-//           listView.push(sighting.species_name);
-//         }
-//       });
-//       data.listView = listView;
-
-//       // if user specified a species_name through the dropdown button
-//       if (speciesName) {
-//         // This is an array
-//         data.selectedSpeciesData = data.sightings.filter((sighting) => sighting.species_name === speciesName);
-//       }
-//       res.render('navlinks/userBirdSighting', data);
-//     });
-//   });
-// });
-
 // Render a user's sighting page
 app.get('/users/:id', (req, res) => {
   const { id } = req.params;
