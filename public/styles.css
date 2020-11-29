@@ -187,3 +187,30 @@ h1 .display {
 #leaveComment {
   font-size: 15px;
 }
+
+#smallBirdError {
+  position: fixed;
+  top: 0;
+  left: 0;
+  bottom: 0;
+  left: 0;
+  overflow: hidden;
+  z-index: -100;
+  opacity: 0.9;
+}
+
+.fullPageError {
+  z-index: 10;
+  top: 50%;
+  margin-top: 60px;
+  min-height: 100vh;
+  height: 100vh;
+}
+
+#reduceTopMargin {
+  margin-top: -7vh;
+}
+
+.errorText {
+  color: white;
+}

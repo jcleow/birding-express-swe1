@@ -1,15 +1,31 @@
 <%- include('./mainpage/headerAndNav') %>
 
   <body>
-    <div class="pageTitle navTopMargin">Sorry you have entered the wrong username and/or password.
-    </div>
-
-    <div class=row>
-    <div class="col-sm-12 d-flex justify-content-center">
-      <a href="/" class="btn btn-primary doneBtn" role="button">
-        Return to Main Page</a
-      >
-    </div>
+    <video autoplay muted loop id="smallBirdError">
+      <source src="/smallBird.mp4" type="video/mp4">
+    </video>
+    <div class ="container d-flex fullPageError justify-content-center align-item-center">    
+      <div class="row">
+            <div class="col-sm-12 my-auto">
+            <div class="container">
+             <h5 class='errorText'>Sorry you have entered the wrong username and/or password.</h5>
+              <div class="row">
+                <div class="col-sm-12 text-center mt-3">
+                  <a href="/login" class="btn btn-info doneBtn" role="button">
+            Login Again</a
+          >
+                </div>
+              </div>
+              <div class="row">
+                <div class="col-sm-12 text-center" id='reduceTopMargin'>
+                  <a href="/" class="btn btn-info doneBtn" role="button">
+            Return to Main Page</a
+          >
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
     </div>
   </body>
   

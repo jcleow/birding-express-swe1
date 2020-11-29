@@ -1,16 +1,27 @@
 <%- include('./mainpage/headerAndNav') %>
 
   <body>
-    <div class="pageTitle navTopMargin">Sorry you are not authorized to edit this sighting
-    </div>
-
-    <div class=row>
-    <div class="col-sm-12 d-flex justify-content-center">
-      <a href="/" class="btn btn-primary doneBtn" role="button">
-        Return to Main Page</a
-      >
-    </div>
+    <video autoplay muted loop id="smallBirdError">
+      <source src="/birdeating.mp4" type="video/mp4">
+    </video>
+    <div class ="container d-flex fullPageError justify-content-center align-item-center">    
+      <div class="row">
+            <div class="col-sm-12 my-auto">
+            <div class="container">
+             <h5 class="errorText">Sorry, you are not allowed to edit this until you sign in as the owner.</h5>
+              <div class="row">
+                <div class="col-sm-12 text-center mt-3">
+                  <a href="/" class="btn btn-info doneBtn" role="button">
+            Return to Main Page</a
+          >
+                </div>
+              </div>
+              
+            </div>
+          </div>
+        </div>
     </div>
   </body>
   
 <%-include('./mainpage/footer') %>
+
