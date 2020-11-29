@@ -44,7 +44,6 @@ app.use(methodOverride('_method'));
 app.use(cookieParser());
 
 // Function that converts supplied username into a hash (using a salt)
-
 const convertUserIdToHash = (userId) => {
   const shaObj = new jsSHA('SHA-512', 'TEXT', { encoding: 'UTF8' });
   const unhashedCookieString = `${userId}-${SALT}`;
@@ -52,6 +51,38 @@ const convertUserIdToHash = (userId) => {
   const hashedCookieString = shaObj.getHash('HEX');
   return hashedCookieString;
 };
+
+// Middleware that checks if a user has been logged in and authenticates
+// before granting access to a page for every request
+app.use((req, res, next) => {
+// set the default value
+  req.middlewareLoggedIn = false;
+
+  // check to see if user is logged in but yet to be authenticated
+  if (req.cookies.loggedInUserId) {
+    // get the hashed value that should be inside the cookie
+    const hash = convertUserIdToHash(req.cookies.loggedInUserId);
+    // Test the value of the cookie
+    if (req.cookies.loggedInHash === hash) {
+      req.middlewareLoggedIn = true;
+      // Look for this user in the database
+      const { loggedInUserId } = req.cookies;
+      // Try to get the user
+      pool.query(`SELECT id,username FROM users WHERE id = ${loggedInUserId}`, (error, result) => {
+        if (error || result.rows.length < 1) {
+          res.status(503).send('sorry');
+        }
+        // set the user as a key in the req object so that it is accessible
+        req.loggedInUserId = result.rows[0].id;
+        req.loggedInUser = result.rows[0].username;
+        next();
+      });
+      // make sure we don't get down to the next () below
+      return;
+    }
+  }
+  next();
+});
 
 // Function that includes the username(if logged-in ) from cookies into dataObj for rendering
 const includeLoggedInUsername = (data, loggedInUserName, loggedInUserId) => {
@@ -61,22 +92,6 @@ const includeLoggedInUsername = (data, loggedInUserName, loggedInUserId) => {
     data.loggedInUserId = loggedInUserId;
   }
   return data;
-};
-
-// TO BE INCLUDED Perform user authentication using req.cookies hashcodes
-const checkIfUserIsAuthenticated = (reqCookies, result, response) => {
-// Perform validation against hashcode in cookies
-  const { loggedInHash } = reqCookies;
-  const userIdFromNote = result.rows[0].user_id;
-  // Since we also want to verify whether the id of the note's author is the same
-  // as the id of the user access it, we hash the author's Id as well
-  const hashedUserIdAsPerNoteString = convertUserIdToHash(userIdFromNote);
-  // Here we compare the current user's id hash against
-  // the note's author's id hash
-  if (loggedInHash !== hashedUserIdAsPerNoteString) {
-    response.status(403);
-    response.render('displayErrorPage');
-  }
 };
 
 // Get all behaviour types from database
@@ -95,10 +110,13 @@ const getAllBehaviourTypes = (callback) => {
 // Route: Render a form that will create a new note
 app.get('/note', (req, res) => {
   getAllBehaviourTypes((allBehavioursArray) => {
-    console.log(allBehavioursArray, 'test');
     const allBehaviourData = {};
     allBehaviourData.behaviours = allBehavioursArray;
-    console.log(allBehaviourData);
+
+    // If user is authenticated through the middleware at the start
+    // Display user's loggedInUsername at the start
+    includeLoggedInUsername(allBehaviourData, req.loggedInUser, req.loggedInUserId);
+
     res.render('navlinks/submitNewBirdSightingForm', allBehaviourData);
   });
 });
@@ -175,7 +193,6 @@ app.get('/note/:id', (req, res) => {
         return;
       }
       // Append comments into the data object
-      console.log(result.rows, 'result-rows');
       data.comments = result.rows;
       // End the res-req cycle
       res.render('birdSighting', data);
@@ -185,7 +202,7 @@ app.get('/note/:id', (req, res) => {
   pool.query(`SELECT *,notes.id AS id FROM notes INNER JOIN users ON users.id=user_id WHERE notes.id=${id}`, (err, result) => {
     let data = result.rows[0];
     // Get all data from notes table, include loggedin User's id and username
-    data = includeLoggedInUsername(data, req.cookies.loggedInUser, req.cookies.loggedInUserId);
+    data = includeLoggedInUsername(data, req.loggedInUser, req.loggedInUserId);
     pool.query(`SELECT name FROM behaviours INNER JOIN notes_behaviours ON behaviours.id=behaviour_id WHERE notes_behaviours.note_id=${id}`, (behaviourErr, behaviourResult) => {
       if (behaviourErr) {
         console.log(behaviourErr, 'behaviourErr');
@@ -209,9 +226,9 @@ app.get('/', (req, res) => {
       return;
     }
     let allSightingsObj = { sightings: result.rows };
-    // Add in current loggedInUser parameter to change navbar display
+    // Add in current loggedInUser parameter to change navbar display to display current user
     allSightingsObj = includeLoggedInUsername(allSightingsObj,
-      req.cookies.loggedInUser, req.cookies.loggedInUserId);
+      req.loggedInUser, req.loggedInUserId);
     res.render('mainpage/allBirdSightings', allSightingsObj);
   });
 });
@@ -252,7 +269,7 @@ app.get('/note/:id/edit', (req, res) => {
     // the note's author's id hash
     if (loggedInHash !== hashedUserIdAsPerNoteString) {
       res.status(403);
-      res.render('displayErrorPage');
+      res.render('displayNotAuthorized');
       return;
     }
     // If valid,
@@ -358,7 +375,7 @@ app.delete('/note/:id/delete', (req, res) => {
     // the note's author's id hash
     if (loggedInHash !== hashedUserIdAsPerNoteString) {
       res.status(403);
-      res.render('displayErrorPage');
+      res.render('displayNotAuthorized');
       return;
     }
     // If valid,
@@ -480,28 +497,72 @@ app.get('/user-dashboard', (req, res) => {
   });
 });
 
+// // Render a user's sighting page
+// app.get('/users/:id', (req, res) => {
+//   const { id } = req.params;
+//   const { species_name: speciesName } = req.query;
+//   // First select username based on id provided in url
+//   pool.query(`SELECT id,username FROM users WHERE id= ${id}`, (err, result) => {
+//     if (err) {
+//       console.log('err', err);
+//       return;
+//     }
+//     const { id: userId } = result.rows[0];
+//     // Next select all objects that is associated with said username
+//     pool.query(`SELECT * FROM notes WHERE user_id=${userId}`, (nextErr, nextResult) => {
+//       if (nextErr) {
+//         console.log('err', err);
+//         return;
+//       }
+//       let data = {};
+//       data.sightings = nextResult.rows;
+//       // This loggedInUser refers to user who is currently logged in
+//       data = includeLoggedInUsername(data, req.loggedInUser, req.loggedInUserId);
+
+//       // Get a list of unique species names to view in dropdown button
+//       const listView = [];
+//       data.sightings.forEach((sighting) => {
+//         if (!listView.includes(sighting.species_name)) {
+//           listView.push(sighting.species_name);
+//         }
+//       });
+//       data.listView = listView;
+
+//       // if user specified a species_name through the dropdown button
+//       if (speciesName) {
+//         // This is an array
+//         data.selectedSpeciesData = data.sightings.filter((sighting) => sighting.species_name === speciesName);
+//       }
+//       res.render('navlinks/userBirdSighting', data);
+//     });
+//   });
+// });
+
 // Render a user's sighting page
 app.get('/users/:id', (req, res) => {
   const { id } = req.params;
   const { species_name: speciesName } = req.query;
+  // Locally block scoped data for use at the last promise chain
+  let data = {};
+  // Array of comments;
+  let arrayOfCommentPromises = [];
   // First select username based on id provided in url
-  pool.query(`SELECT id,username FROM users WHERE id= ${id}`, (err, result) => {
-    if (err) {
-      console.log('err', err);
-      return;
-    }
-    const { id: userId } = result.rows[0];
-    console.log(result.rows[0], 'test-6');
-    // Next select all objects that is associated with said username
-    pool.query(`SELECT * FROM notes WHERE user_id=${userId}`, (nextErr, nextResult) => {
-      if (nextErr) {
-        console.log('err', err);
-        return;
-      }
-      let data = {};
+  pool
+    .query(`SELECT id,username FROM users WHERE id= ${id}`)
+  // Based on the results obtained, pass it into the next query to get all data from notes
+    .then((result) => {
+      const { id: userId } = result.rows[0];
+      // pool.query itself returns a promise... but to pass it to the next .then()
+      // we need to add another return statement to the output of pool.query
+      return pool.query(`SELECT * FROM notes WHERE user_id=${userId}`);
+    }, (error) => {
+      console.log(error);
+      throw error;
+    })
+    .then((nextResult) => {
       data.sightings = nextResult.rows;
       // This loggedInUser refers to user who is currently logged in
-      data = includeLoggedInUsername(data, req.cookies.loggedInUser, req.cookies.loggedInUserId);
+      data = includeLoggedInUsername(data, req.loggedInUser, req.loggedInUserId);
 
       // Get a list of unique species names to view in dropdown button
       const listView = [];
@@ -513,13 +574,43 @@ app.get('/users/:id', (req, res) => {
       data.listView = listView;
 
       // if user specified a species_name through the dropdown button
-      if (speciesName) {
-        // This is an array
-        data.selectedSpeciesData = data.sightings.filter((sighting) => sighting.species_name === speciesName);
-      }
-      res.render('navlinks/userBirdSighting', data);
-    });
-  });
+      // This is an array
+      data.selectedSpeciesData = data.sightings.filter((sighting) => sighting.species_name === speciesName);
+      console.log(data, 'data-1');
+
+      // Don't have to explicitly return a Promise.resolve() here since .then() handles
+      // this for us
+      // I think no value is passed on to the next .then();
+    })
+
+  // Create an array of Promises that queries and searches for comments
+    .then(() => {
+      arrayOfCommentPromises = data.selectedSpeciesData.map((selectedData) => pool.query(`SELECT note_id,comment FROM users_notes WHERE user_id = ${data.loggedInUserId} AND note_id = ${selectedData.id}`));
+    })
+
+  // Pass in all the comments promises into Promise.all() where it will only resolve when
+  // the individual promises are resolved
+    .then(() => {
+      // not ideal but need to nest .then, but required to access the values from promise.all
+      Promise.all(arrayOfCommentPromises)
+        .then((promiseResults) => {
+          // output the result into an object
+          const commentArray = [];
+
+          promiseResults.forEach((result) => {
+            result.rows.forEach((row) => {
+              commentArray.push(row);
+            });
+          });
+
+          // Assign comments into data obj to be passed into EJS
+          data.comments = commentArray;
+
+          // data.comments = result.rows;
+          res.render('navlinks/userBirdSighting', data);
+        });
+    })
+    .catch((err) => console.error(err.stack));
 });
 
 // Render a form to create a new species
