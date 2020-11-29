@@ -214,3 +214,28 @@ h1 .display {
 .errorText {
   color: white;
 }
+
+.bgBirds {
+  background: url("birddrawings.png");
+  background-repeat: yes;
+}
+
+#mainPageBirdDisplay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  bottom: 0;
+  left: 0;
+  overflow: hidden;
+  z-index: -100;
+  opacity: 0.7;
+}
+
+.tesellateBg {
+  background: url("/birddrawings.png");
+  background-size: 500px;
+}
+
+.turqoise {
+  color: rgb(3, 121, 109);
+}

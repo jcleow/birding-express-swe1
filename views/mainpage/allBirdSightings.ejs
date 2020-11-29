@@ -1,8 +1,8 @@
 <%- include('headerAndNav') %>
 <body class='bg'>  
 <!-- First Section--> 
-<video autoplay muted loop id="smallBirdError">
-  <source src="/birdeating.mp4" type="video/mp4">
+<video autoplay muted loop id="mainPageBirdDisplay">
+  <source src="/seagulls.mp4" type="video/mp4">
 </video>  
 <div class= "toCollapseShow" data-toggle="collapse" data-target="#collapseSightingsTable">
   <div class="row">
@@ -24,26 +24,26 @@
   <table class="table table-hover" class="collapse" data-parent="#overallAccordion">
   <thead>
     <tr>
-      <th scope="col">ID.</th>
-      <th scope="col">Species Name</th>
-      <th scope="col">Habitat</th>
-      <th scope="col">Flock Size</th>
-      <th scope="col">Logged By</th>
-      <th scope="col">Actions</th>
+      <th scope="col" class='text-white'>ID.</th>
+      <th scope="col" class='text-white'>Species Name</th>
+      <th scope="col" class='text-white'>Habitat</th>
+      <th scope="col" class='text-white'>Flock Size</th>
+      <th scope="col" class='text-white'>Logged By</th>
+      <th scope="col" class='text-white'>Actions</th>
     </tr>
   </thead>
   <tbody id="accordion">
     <% sightings.forEach((sighting,index)=>{ %>
     <tr class= "accordion-toggle collapsed" data-toggle="collapse" data-target="#collapse<%=index%>">
-      <th scope="row"><%=sighting.id%></th>
-      <td><a href="/note/<%=sighting.id%>"><%=sighting.species_name%> </a> </td>
-      <td> <%=sighting.habitat%> </td>
-      <td> <%=sighting.flock_size%> </td>
-      <td> <%=sighting.username%></td>      
+      <th scope="row" class='text-white'><%=sighting.id%></th>
+      <td><a href="/note/<%=sighting.id%>" class="text-dark"><%=sighting.species_name%> </a> </td>
+      <td class='text-white'> <%=sighting.habitat%> </td>
+      <td class='text-white'> <%=sighting.flock_size%> </td>
+      <td class='text-white'> <%=sighting.username%></td>      
     <td class='actionBtns'>
       <div class="row">
         <div class="col-sm-3">
-             <a href="/note/<%=sighting.id%>/edit" class="btn btn-warning" role="button">
+             <a href="/note/<%=sighting.id%>/edit" class="btn btn-outline-dark" role="button">
           Edit</a
         >
         </div>
@@ -51,7 +51,7 @@
         <form action="/note/<%=sighting.id%>/delete?_method=DELETE" method="POST">
           <input
             type="submit"
-            class="btn btn-danger"
+            class="btn btn-outline-danger"
             name="_method"
             value="Delete"
           />
@@ -116,24 +116,24 @@
   <table class="table table-hover tableBackground" class="collapse" data-parent="#overallAccordion">
   <thead>
     <tr>
-      <th scope="col">ID</th>
-      <th scope="col">Species Name</th>
-      <th scope="col">Scientific Name</th>
-      <th scope="col">Family Name</th>
-      <th scope="col">Other Information</th>
+      <th scope="col" class='text-white'>ID</th>
+      <th scope="col"class='text-white'>Species Name</th>
+      <th scope="col"class='text-white'>Scientific Name</th>
+      <th scope="col"class='text-white'>Family Name</th>
+      <th scope="col"class='text-white'>Other Information</th>
     </tr>
   </thead>
   <tbody id="accordion2">
     <% species.forEach((singleSpecies,index)=>{ %>
     <tr class= "accordion-toggle collapsed" data-toggle="collapse" data-target="#collapse<%=index%>">
-      <th scope="row"><%=singleSpecies.id%></th>
-      <td><a href="/note/<%=species.id%>"><%=singleSpecies.name%> </a> </td>
-      <td> <%=singleSpecies.scientific_name%> </td>
-      <td> <%=singleSpecies.family_name%></td>      
+      <th scope="row" class='text-white'><%=singleSpecies.id%></th>
+      <td ><a href="/note/<%=species.id%>" class='text-dark'><%=singleSpecies.name%> </a> </td>
+      <td class='text-white'> <%=singleSpecies.scientific_name%> </td>
+      <td class='text-white'> <%=singleSpecies.family_name%></td>      
     <td class='actionBtns'>
       <div class="row">
         <div class="col-sm-3">
-             <a href="/note/<%=singleSpecies.id%>/edit" class="btn btn-warning" role="button">
+             <a href="/note/<%=singleSpecies.id%>/edit" class="btn btn-outline-dark" role="button">
           Edit</a
         >
         </div>
@@ -141,7 +141,7 @@
         <form action="/note/<%=singleSpecies.id%>/delete?_method=DELETE" method="POST">
           <input
             type="submit"
-            class="btn btn-danger"
+            class="btn btn-outline-danger"
             name="_method"
             value="Delete"
           />
