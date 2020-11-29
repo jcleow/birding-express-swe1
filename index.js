@@ -3,6 +3,7 @@ import jsSHA from 'jssha';
 import methodOverride from 'method-override';
 import cookieParser from 'cookie-parser';
 import express from 'express';
+import axios from 'axios';
 
 // Constant Variable of process.env
 const SALT = process.env.MY_ENV_VAR;
@@ -70,7 +71,7 @@ app.use((req, res, next) => {
       // Try to get the user
       pool.query(`SELECT id,username FROM users WHERE id = ${loggedInUserId}`, (error, result) => {
         if (error || result.rows.length < 1) {
-          res.status(503).send('sorry');
+          res.status(503).send('sorry an error occurred');
         }
         // set the user as a key in the req object so that it is accessible
         req.loggedInUserId = result.rows[0].id;
@@ -217,20 +218,24 @@ app.get('/note/:id', (req, res) => {
 
 // Route: Render a list of notes
 app.get('/', (req, res) => {
+  let allSightingsObj;
   const getAllNotesQuery = {
     text: 'SELECT *, notes.id AS id FROM notes INNER JOIN users ON user_id=users.id ',
   };
-  pool.query(getAllNotesQuery, (err, result) => {
-    if (err) {
-      console.log(err, 'error');
-      return;
-    }
-    let allSightingsObj = { sightings: result.rows };
-    // Add in current loggedInUser parameter to change navbar display to display current user
-    allSightingsObj = includeLoggedInUsername(allSightingsObj,
-      req.loggedInUser, req.loggedInUserId);
-    res.render('mainpage/allBirdSightings', allSightingsObj);
-  });
+  pool
+    .query(getAllNotesQuery)
+    .then((result) => {
+      allSightingsObj = { sightings: result.rows };
+      // Add in current loggedInUser parameter to change navbar display to display current user
+      allSightingsObj = includeLoggedInUsername(allSightingsObj,
+        req.loggedInUser, req.loggedInUserId);
+    })
+    .then(() => pool.query('SELECT * FROM species'))
+    .then((result) => {
+      allSightingsObj.species = result.rows;
+      res.render('mainpage/allBirdSightings', allSightingsObj);
+    })
+    .catch((error) => console.error(error.stack));
 });
 
 // Render the edit form
@@ -437,9 +442,21 @@ app.post('/signup', (req, res) => {
     res.cookie('loggedInHash', hashedUserIdString);
     res.cookie('loggedInUser', req.body.username);
     res.cookie('loggedInUserId', result.rows[0].id);
-    res.render('navlinks/successLogin');
+    res.redirect('/successLogin');
   });
 });
+
+app.get('/successLogin', (req, res) => {
+  const data = {};
+  includeLoggedInUsername(data, req.cookies.loggedInUser, req.cookies.loggedInUserId);
+  console.log(data, 'test-1');
+  res.render('navlinks/successLogin', data);
+});
+
+// This doesn't work
+// axios.get('/successLogin')
+//   .then((response) => response.render('navlinks/successLogin'))
+//   .catch((err) => { console.error(err.stack); });
 
 // Route handler that handles logins
 app.get('/login', (req, res) => {

@@ -7,8 +7,18 @@
 <div class="container">
   <div class="dropdown mt-4 d-flex justify-content-center">
   
-  <button class="btn btn-secondary dropdown-toggle" type="button" id="dropdownMenuButton" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
+  <button 
+  class="btn btn-secondary dropdown-toggle" type="button" id="dropdownMenuButton" 
+  data-toggle="dropdown" 
+  aria-haspopup="true" 
+  aria-expanded="false" 
+  <%if(listView.length === 0){%>
+  disabled
+  <% } %>
+  >
+  
     Select Species to View
+  
   </button>
 
   
@@ -25,12 +35,16 @@
 </div>
  <div class="container mt-3">
  <p class='text-center'>
-        Select a species to view in the drop down button
+  <%if(listView.length === 0){%>
+    You currently have no sightings. Please begin by adding a "New Sighting".
+  <% } else { %> 
+    Please select a species name from the dropdown box.
+  <% } %> 
  </p>
   </div>
 
     <% if(locals.selectedSpeciesData){ %>
-    <% selectedSpeciesData.forEach((data)=>{ %>
+    <% selectedSpeciesData.forEach((data,index)=>{ %>
     <div class="container mt-3 sightingContainer">
       <div class="row pt-3 pl-3"><b>Species Name:</b></div>
       <div class="row pl-3"><%=data.species_name%></div>
@@ -64,13 +78,13 @@
      
       <div class="row mt-3 pb-4 d-flex justify-content-center">
         <div class="col-sm-1">
-          <a href="/note/<%=selectedSpeciesData.id%>/edit" class="btn btn-warning" role="button">
+          <a href="/note/<%=selectedSpeciesData[index].id%>/edit" class="btn btn-warning" role="button">
             Edit</a
           >
         </div>
 
         <div class="col-sm-1">
-          <form action="/note/sighting.id/delete?_method=DELETE" method="POST">
+          <form action="/note/<%=selectedSpeciesData[index].id%>/delete?_method=DELETE" method="POST">
             <input
               type="submit"
               class="btn btn-danger"
